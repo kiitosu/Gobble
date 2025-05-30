@@ -1,0 +1,10 @@
+services:
+  server:
+    build:
+      context: .
+      # Dockerfileのserverステージを使う
+      target: server
+    # ビルドイメージに名前をつける
+    image: go-grpc-server
+    ports:
+      - "8080:8080"

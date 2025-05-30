@@ -1,0 +1,19 @@
+{
+  "name": "go-grpc-connect",
+  "version": "1.0.0",
+  "description": "以下の記事で使用したコードです https://zenn.dev/articles/e801a27dcef780/edit",
+  "main": "index.js",
+  "scripts": {
+    "frontend:install": "cd frontend && npm install",
+    "dev": "cd frontend && npm run dev",
+    "backend:tidy": "cd backend && go mod tidy",
+    "gen": "cd proto && npx --prefix ../frontend buf generate",
+    "build": "docker-compose build",
+    "up": "docker-compose up",
+    "setup": "npm run frontend:install && npm run backend:tidy && npm run gen && npm run build",
+    "all": "npm run setup && npm run up"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
