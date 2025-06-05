@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package game.v1;
+
+option go_package = "example/gen/game/v1;gamev1";
+
+/* Create game */
+message Player {
+    int32 id = 1;
+    string name = 2;
+    int32 game_id = 3;
+}
+message CreateGameRequest {
+    string player_name = 1;
+    string game_name = 2;
+}
+
+message CreateGameResponse {
+    Player player = 1;
+}
+
+service CreateGameService {
+    rpc CreateGame(CreateGameRequest) returns (CreateGameResponse) {}
+}
+
+/* Get games */
+message GetGamesRequest {}
+message Game {
+    int32 id = 1;
+    string status = 2;
+}
+message GetGamesResponse {
+    repeated Game games = 1;
+
+}
+service GetGamesService {
+    rpc GetGames(GetGamesRequest) returns (GetGamesResponse) {}
+}
+
+/* Join game */
+message JoinGameRequest {
+    string player_name = 1;
+    string game_id = 2;
+}
+
+message JoinGameResponse {
+    Player player = 1;
+}
+
+service JoinGameService {
+    rpc JoinGame(JoinGameRequest) returns (JoinGameResponse) {}
+}
+
+/* Start game */
+message StartGameRequest {
+    string game_id = 1;
+    string user_id = 2;
+}
+message StartGameResponse {}
+service StartGameService {
+    rpc StartGame(StartGameRequest) returns (StartGameResponse) {}
+}
+
+/* Claim card */
+message ClaimCardRequest {
+    string user_id = 1;
+}
+message ClaimCardResponse{} 
+service ClaimCardService {
+    rpc ClaimCard(ClaimCardRequest) returns (ClaimCardResponse) {}
+}
+
+/* Submit Answer */
+message SubmitAnswerRequest {
+    string answer = 1;
+}
+
+message SubmitAnswerResponse {
+    string is_correct = 1;
+}
+
+service SubmitAnswerService {
+    rpc SubmitAnswer(SubmitAnswerRequest) returns (SubmitAnswerResponse) {}
+}
