@@ -60,7 +60,7 @@ function App() {
     return (
         <>
             {gameStatus === "STARTED" && player && startedGame ? (
-                <Game message={message} />
+                <Game message={message} player={player}/>
             ) : (
                 <Lobby
                     gameStatus={gameStatus}

@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file game/v1/game.proto.
  */
 export const file_game_v1_game: GenFile = /*@__PURE__*/
-  fileDesc("ChJnYW1lL3YxL2dhbWUucHJvdG8SB2dhbWUudjEiMwoGUGxheWVyEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSDwoHZ2FtZV9pZBgDIAEoBSI7ChFDcmVhdGVHYW1lUmVxdWVzdBITCgtwbGF5ZXJfbmFtZRgBIAEoCRIRCglnYW1lX25hbWUYAiABKAkiNQoSQ3JlYXRlR2FtZVJlc3BvbnNlEh8KBnBsYXllchgBIAEoCzIPLmdhbWUudjEuUGxheWVyIhEKD0dldEdhbWVzUmVxdWVzdCIiCgRHYW1lEgoKAmlkGAEgASgFEg4KBnN0YXR1cxgCIAEoCSIwChBHZXRHYW1lc1Jlc3BvbnNlEhwKBWdhbWVzGAEgAygLMg0uZ2FtZS52MS5HYW1lIjcKD0pvaW5HYW1lUmVxdWVzdBITCgtwbGF5ZXJfbmFtZRgBIAEoCRIPCgdnYW1lX2lkGAIgASgJIjMKEEpvaW5HYW1lUmVzcG9uc2USHwoGcGxheWVyGAEgASgLMg8uZ2FtZS52MS5QbGF5ZXIiNAoQU3RhcnRHYW1lUmVxdWVzdBIPCgdnYW1lX2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkiEwoRU3RhcnRHYW1lUmVzcG9uc2UiIwoQQ2xhaW1DYXJkUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIhMKEUNsYWltQ2FyZFJlc3BvbnNlIiUKE1N1Ym1pdEFuc3dlclJlcXVlc3QSDgoGYW5zd2VyGAEgASgJIioKFFN1Ym1pdEFuc3dlclJlc3BvbnNlEhIKCmlzX2NvcnJlY3QYASABKAkyXAoRQ3JlYXRlR2FtZVNlcnZpY2USRwoKQ3JlYXRlR2FtZRIaLmdhbWUudjEuQ3JlYXRlR2FtZVJlcXVlc3QaGy5nYW1lLnYxLkNyZWF0ZUdhbWVSZXNwb25zZSIAMlQKD0dldEdhbWVzU2VydmljZRJBCghHZXRHYW1lcxIYLmdhbWUudjEuR2V0R2FtZXNSZXF1ZXN0GhkuZ2FtZS52MS5HZXRHYW1lc1Jlc3BvbnNlIgAyVAoPSm9pbkdhbWVTZXJ2aWNlEkEKCEpvaW5HYW1lEhguZ2FtZS52MS5Kb2luR2FtZVJlcXVlc3QaGS5nYW1lLnYxLkpvaW5HYW1lUmVzcG9uc2UiADJYChBTdGFydEdhbWVTZXJ2aWNlEkQKCVN0YXJ0R2FtZRIZLmdhbWUudjEuU3RhcnRHYW1lUmVxdWVzdBoaLmdhbWUudjEuU3RhcnRHYW1lUmVzcG9uc2UiADJYChBDbGFpbUNhcmRTZXJ2aWNlEkQKCUNsYWltQ2FyZBIZLmdhbWUudjEuQ2xhaW1DYXJkUmVxdWVzdBoaLmdhbWUudjEuQ2xhaW1DYXJkUmVzcG9uc2UiADJkChNTdWJtaXRBbnN3ZXJTZXJ2aWNlEk0KDFN1Ym1pdEFuc3dlchIcLmdhbWUudjEuU3VibWl0QW5zd2VyUmVxdWVzdBodLmdhbWUudjEuU3VibWl0QW5zd2VyUmVzcG9uc2UiAEIcWhpleGFtcGxlL2dlbi9nYW1lL3YxO2dhbWV2MWIGcHJvdG8z");
+  fileDesc("ChJnYW1lL3YxL2dhbWUucHJvdG8SB2dhbWUudjEiMwoGUGxheWVyEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSDwoHZ2FtZV9pZBgDIAEoBSI7ChFDcmVhdGVHYW1lUmVxdWVzdBITCgtwbGF5ZXJfbmFtZRgBIAEoCRIRCglnYW1lX25hbWUYAiABKAkiNQoSQ3JlYXRlR2FtZVJlc3BvbnNlEh8KBnBsYXllchgBIAEoCzIPLmdhbWUudjEuUGxheWVyIhEKD0dldEdhbWVzUmVxdWVzdCIiCgRHYW1lEgoKAmlkGAEgASgFEg4KBnN0YXR1cxgCIAEoCSIwChBHZXRHYW1lc1Jlc3BvbnNlEhwKBWdhbWVzGAEgAygLMg0uZ2FtZS52MS5HYW1lIjcKD0pvaW5HYW1lUmVxdWVzdBITCgtwbGF5ZXJfbmFtZRgBIAEoCRIPCgdnYW1lX2lkGAIgASgJIjMKEEpvaW5HYW1lUmVzcG9uc2USHwoGcGxheWVyGAEgASgLMg8uZ2FtZS52MS5QbGF5ZXIiNAoQU3RhcnRHYW1lUmVxdWVzdBIPCgdnYW1lX2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkiEwoRU3RhcnRHYW1lUmVzcG9uc2UiJwoSUmVwb3J0UmVhZHlSZXF1ZXN0EhEKCXBsYXllcl9pZBgBIAEoCSIVChNSZXBvcnRSZWFkeVJlc3BvbnNlIiUKE1N1Ym1pdEFuc3dlclJlcXVlc3QSDgoGYW5zd2VyGAEgASgJIioKFFN1Ym1pdEFuc3dlclJlc3BvbnNlEhIKCmlzX2NvcnJlY3QYASABKAkyXAoRQ3JlYXRlR2FtZVNlcnZpY2USRwoKQ3JlYXRlR2FtZRIaLmdhbWUudjEuQ3JlYXRlR2FtZVJlcXVlc3QaGy5nYW1lLnYxLkNyZWF0ZUdhbWVSZXNwb25zZSIAMlQKD0dldEdhbWVzU2VydmljZRJBCghHZXRHYW1lcxIYLmdhbWUudjEuR2V0R2FtZXNSZXF1ZXN0GhkuZ2FtZS52MS5HZXRHYW1lc1Jlc3BvbnNlIgAyVAoPSm9pbkdhbWVTZXJ2aWNlEkEKCEpvaW5HYW1lEhguZ2FtZS52MS5Kb2luR2FtZVJlcXVlc3QaGS5nYW1lLnYxLkpvaW5HYW1lUmVzcG9uc2UiADJYChBTdGFydEdhbWVTZXJ2aWNlEkQKCVN0YXJ0R2FtZRIZLmdhbWUudjEuU3RhcnRHYW1lUmVxdWVzdBoaLmdhbWUudjEuU3RhcnRHYW1lUmVzcG9uc2UiADJgChJSZXBvcnRSZWFkeVNlcnZpY2USSgoLUmVwb3J0UmVhZHkSGy5nYW1lLnYxLlJlcG9ydFJlYWR5UmVxdWVzdBocLmdhbWUudjEuUmVwb3J0UmVhZHlSZXNwb25zZSIAMmQKE1N1Ym1pdEFuc3dlclNlcnZpY2USTQoMU3VibWl0QW5zd2VyEhwuZ2FtZS52MS5TdWJtaXRBbnN3ZXJSZXF1ZXN0Gh0uZ2FtZS52MS5TdWJtaXRBbnN3ZXJSZXNwb25zZSIAQhxaGmV4YW1wbGUvZ2VuL2dhbWUvdjE7Z2FtZXYxYgZwcm90bzM");
 
 /**
  * Create game 
@@ -213,35 +213,35 @@ export const StartGameResponseSchema: GenMessage<StartGameResponse> = /*@__PURE_
   messageDesc(file_game_v1_game, 9);
 
 /**
- * Claim card 
+ * Report ready 
  *
- * @generated from message game.v1.ClaimCardRequest
+ * @generated from message game.v1.ReportReadyRequest
  */
-export type ClaimCardRequest = Message<"game.v1.ClaimCardRequest"> & {
+export type ReportReadyRequest = Message<"game.v1.ReportReadyRequest"> & {
   /**
-   * @generated from field: string user_id = 1;
+   * @generated from field: string player_id = 1;
    */
-  userId: string;
+  playerId: string;
 };
 
 /**
- * Describes the message game.v1.ClaimCardRequest.
- * Use `create(ClaimCardRequestSchema)` to create a new message.
+ * Describes the message game.v1.ReportReadyRequest.
+ * Use `create(ReportReadyRequestSchema)` to create a new message.
  */
-export const ClaimCardRequestSchema: GenMessage<ClaimCardRequest> = /*@__PURE__*/
+export const ReportReadyRequestSchema: GenMessage<ReportReadyRequest> = /*@__PURE__*/
   messageDesc(file_game_v1_game, 10);
 
 /**
- * @generated from message game.v1.ClaimCardResponse
+ * @generated from message game.v1.ReportReadyResponse
  */
-export type ClaimCardResponse = Message<"game.v1.ClaimCardResponse"> & {
+export type ReportReadyResponse = Message<"game.v1.ReportReadyResponse"> & {
 };
 
 /**
- * Describes the message game.v1.ClaimCardResponse.
- * Use `create(ClaimCardResponseSchema)` to create a new message.
+ * Describes the message game.v1.ReportReadyResponse.
+ * Use `create(ReportReadyResponseSchema)` to create a new message.
  */
-export const ClaimCardResponseSchema: GenMessage<ClaimCardResponse> = /*@__PURE__*/
+export const ReportReadyResponseSchema: GenMessage<ReportReadyResponse> = /*@__PURE__*/
   messageDesc(file_game_v1_game, 11);
 
 /**
@@ -341,16 +341,16 @@ export const StartGameService: GenService<{
   serviceDesc(file_game_v1_game, 3);
 
 /**
- * @generated from service game.v1.ClaimCardService
+ * @generated from service game.v1.ReportReadyService
  */
-export const ClaimCardService: GenService<{
+export const ReportReadyService: GenService<{
   /**
-   * @generated from rpc game.v1.ClaimCardService.ClaimCard
+   * @generated from rpc game.v1.ReportReadyService.ReportReady
    */
-  claimCard: {
+  reportReady: {
     methodKind: "unary";
-    input: typeof ClaimCardRequestSchema;
-    output: typeof ClaimCardResponseSchema;
+    input: typeof ReportReadyRequestSchema;
+    output: typeof ReportReadyResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_game_v1_game, 4);

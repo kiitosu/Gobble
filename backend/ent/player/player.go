@@ -72,10 +72,10 @@ const DefaultStatus = StatusJOINING
 
 // Status values.
 const (
-	StatusJOINING    Status = "JOINING"
-	StatusSTARTING   Status = "STARTING"
-	StatusREQUESTING Status = "REQUESTING"
-	StatusPLAYING    Status = "PLAYING"
+	StatusJOINING  Status = "JOINING"
+	StatusSTARTING Status = "STARTING"
+	StatusREADY    Status = "READY"
+	StatusPLAYING  Status = "PLAYING"
 )
 
 func (s Status) String() string {
@@ -85,7 +85,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusJOINING, StatusSTARTING, StatusREQUESTING, StatusPLAYING:
+	case StatusJOINING, StatusSTARTING, StatusREADY, StatusPLAYING:
 		return nil
 	default:
 		return fmt.Errorf("player: invalid enum value for status field: %q", s)

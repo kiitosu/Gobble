@@ -181,6 +181,29 @@ func (s *GameServer) StartGame(
 
 }
 
+func (s *GameServer) ReportReady(
+	ctx context.Context,
+	req *connect.Request[gamev1.ReportReadyRequest],
+) (*connect.Response[gamev1.ReportReadyResponse], error) {
+	client := GetDbClient(ctx)
+	defer client.Close()
+
+	// カード要求を受けたら要求をしたユーザの状態をREADYにする
+	playerId := req.Msg.PlayerId
+	playerIdInt, err := strconv.Atoi(playerId)
+	if err != nil {
+		log.Printf("invalid playerId: %d", playerIdInt)
+	}
+
+	status := player.StatusREADY
+	_, err = client.Player.UpdateOneID(playerIdInt).SetStatus(status).Save(ctx)
+	if err != nil {
+		log.Printf("Failed to update playerId %d to %s", playerIdInt, status)
+	}
+	return connect.NewResponse(&gamev1.ReportReadyResponse{}), nil
+
+}
+
 func (s *GameServer) SubmitAnswer(
 	ctx context.Context,
 	req *connect.Request[gamev1.SubmitAnswerRequest],
@@ -285,6 +308,7 @@ func main() {
 	mux.Handle(gamev1connect.NewGetGamesServiceHandler(game))
 	mux.Handle(gamev1connect.NewSubmitAnswerServiceHandler(game))
 	mux.Handle(gamev1connect.NewStartGameServiceHandler(game))
+	mux.Handle(gamev1connect.NewReportReadyServiceHandler(game))
 
 	// WebSocketハンドラの登録
 	mux.HandleFunc("/ws", websocketHandler)

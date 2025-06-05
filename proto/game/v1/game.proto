@@ -61,13 +61,13 @@ service StartGameService {
     rpc StartGame(StartGameRequest) returns (StartGameResponse) {}
 }
 
-/* Claim card */
-message ClaimCardRequest {
-    string user_id = 1;
+/* Report ready */
+message ReportReadyRequest {
+    string player_id = 1;
 }
-message ClaimCardResponse{} 
-service ClaimCardService {
-    rpc ClaimCard(ClaimCardRequest) returns (ClaimCardResponse) {}
+message ReportReadyResponse{}
+service ReportReadyService {
+    rpc ReportReady(ReportReadyRequest) returns (ReportReadyResponse) {}
 }
 
 /* Submit Answer */

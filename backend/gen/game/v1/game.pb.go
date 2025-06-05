@@ -497,28 +497,28 @@ func (*StartGameResponse) Descriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{9}
 }
 
-// Claim card
-type ClaimCardRequest struct {
+// Report ready
+type ReportReadyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ClaimCardRequest) Reset() {
-	*x = ClaimCardRequest{}
+func (x *ReportReadyRequest) Reset() {
+	*x = ReportReadyRequest{}
 	mi := &file_game_v1_game_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ClaimCardRequest) String() string {
+func (x *ReportReadyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ClaimCardRequest) ProtoMessage() {}
+func (*ReportReadyRequest) ProtoMessage() {}
 
-func (x *ClaimCardRequest) ProtoReflect() protoreflect.Message {
+func (x *ReportReadyRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_game_v1_game_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -530,38 +530,38 @@ func (x *ClaimCardRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ClaimCardRequest.ProtoReflect.Descriptor instead.
-func (*ClaimCardRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReportReadyRequest.ProtoReflect.Descriptor instead.
+func (*ReportReadyRequest) Descriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *ClaimCardRequest) GetUserId() string {
+func (x *ReportReadyRequest) GetPlayerId() string {
 	if x != nil {
-		return x.UserId
+		return x.PlayerId
 	}
 	return ""
 }
 
-type ClaimCardResponse struct {
+type ReportReadyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ClaimCardResponse) Reset() {
-	*x = ClaimCardResponse{}
+func (x *ReportReadyResponse) Reset() {
+	*x = ReportReadyResponse{}
 	mi := &file_game_v1_game_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ClaimCardResponse) String() string {
+func (x *ReportReadyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ClaimCardResponse) ProtoMessage() {}
+func (*ReportReadyResponse) ProtoMessage() {}
 
-func (x *ClaimCardResponse) ProtoReflect() protoreflect.Message {
+func (x *ReportReadyResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_game_v1_game_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -573,8 +573,8 @@ func (x *ClaimCardResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ClaimCardResponse.ProtoReflect.Descriptor instead.
-func (*ClaimCardResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReportReadyResponse.ProtoReflect.Descriptor instead.
+func (*ReportReadyResponse) Descriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{11}
 }
 
@@ -697,10 +697,10 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x10StartGameRequest\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\tR\x06gameId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x13\n" +
-	"\x11StartGameResponse\"+\n" +
-	"\x10ClaimCardRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x13\n" +
-	"\x11ClaimCardResponse\"-\n" +
+	"\x11StartGameResponse\"1\n" +
+	"\x12ReportReadyRequest\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\"\x15\n" +
+	"\x13ReportReadyResponse\"-\n" +
 	"\x13SubmitAnswerRequest\x12\x16\n" +
 	"\x06answer\x18\x01 \x01(\tR\x06answer\"5\n" +
 	"\x14SubmitAnswerResponse\x12\x1d\n" +
@@ -714,9 +714,9 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x0fJoinGameService\x12A\n" +
 	"\bJoinGame\x12\x18.game.v1.JoinGameRequest\x1a\x19.game.v1.JoinGameResponse\"\x002X\n" +
 	"\x10StartGameService\x12D\n" +
-	"\tStartGame\x12\x19.game.v1.StartGameRequest\x1a\x1a.game.v1.StartGameResponse\"\x002X\n" +
-	"\x10ClaimCardService\x12D\n" +
-	"\tClaimCard\x12\x19.game.v1.ClaimCardRequest\x1a\x1a.game.v1.ClaimCardResponse\"\x002d\n" +
+	"\tStartGame\x12\x19.game.v1.StartGameRequest\x1a\x1a.game.v1.StartGameResponse\"\x002`\n" +
+	"\x12ReportReadyService\x12J\n" +
+	"\vReportReady\x12\x1b.game.v1.ReportReadyRequest\x1a\x1c.game.v1.ReportReadyResponse\"\x002d\n" +
 	"\x13SubmitAnswerService\x12M\n" +
 	"\fSubmitAnswer\x12\x1c.game.v1.SubmitAnswerRequest\x1a\x1d.game.v1.SubmitAnswerResponse\"\x00B\x1cZ\x1aexample/gen/game/v1;gamev1b\x06proto3"
 
@@ -744,8 +744,8 @@ var file_game_v1_game_proto_goTypes = []any{
 	(*JoinGameResponse)(nil),     // 7: game.v1.JoinGameResponse
 	(*StartGameRequest)(nil),     // 8: game.v1.StartGameRequest
 	(*StartGameResponse)(nil),    // 9: game.v1.StartGameResponse
-	(*ClaimCardRequest)(nil),     // 10: game.v1.ClaimCardRequest
-	(*ClaimCardResponse)(nil),    // 11: game.v1.ClaimCardResponse
+	(*ReportReadyRequest)(nil),   // 10: game.v1.ReportReadyRequest
+	(*ReportReadyResponse)(nil),  // 11: game.v1.ReportReadyResponse
 	(*SubmitAnswerRequest)(nil),  // 12: game.v1.SubmitAnswerRequest
 	(*SubmitAnswerResponse)(nil), // 13: game.v1.SubmitAnswerResponse
 }
@@ -757,13 +757,13 @@ var file_game_v1_game_proto_depIdxs = []int32{
 	3,  // 4: game.v1.GetGamesService.GetGames:input_type -> game.v1.GetGamesRequest
 	6,  // 5: game.v1.JoinGameService.JoinGame:input_type -> game.v1.JoinGameRequest
 	8,  // 6: game.v1.StartGameService.StartGame:input_type -> game.v1.StartGameRequest
-	10, // 7: game.v1.ClaimCardService.ClaimCard:input_type -> game.v1.ClaimCardRequest
+	10, // 7: game.v1.ReportReadyService.ReportReady:input_type -> game.v1.ReportReadyRequest
 	12, // 8: game.v1.SubmitAnswerService.SubmitAnswer:input_type -> game.v1.SubmitAnswerRequest
 	2,  // 9: game.v1.CreateGameService.CreateGame:output_type -> game.v1.CreateGameResponse
 	5,  // 10: game.v1.GetGamesService.GetGames:output_type -> game.v1.GetGamesResponse
 	7,  // 11: game.v1.JoinGameService.JoinGame:output_type -> game.v1.JoinGameResponse
 	9,  // 12: game.v1.StartGameService.StartGame:output_type -> game.v1.StartGameResponse
-	11, // 13: game.v1.ClaimCardService.ClaimCard:output_type -> game.v1.ClaimCardResponse
+	11, // 13: game.v1.ReportReadyService.ReportReady:output_type -> game.v1.ReportReadyResponse
 	13, // 14: game.v1.SubmitAnswerService.SubmitAnswer:output_type -> game.v1.SubmitAnswerResponse
 	9,  // [9:15] is the sub-list for method output_type
 	3,  // [3:9] is the sub-list for method input_type

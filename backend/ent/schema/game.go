@@ -44,7 +44,7 @@ func (Player) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("name").NotEmpty(),
 		field.Enum("status").
-			Values("JOINING", "STARTING", "REQUESTING", "PLAYING").
+			Values("JOINING", "STARTING", "READY", "PLAYING").
 			Default("JOINING"),
 	}
 }

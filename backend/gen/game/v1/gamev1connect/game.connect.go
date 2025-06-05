@@ -29,8 +29,8 @@ const (
 	JoinGameServiceName = "game.v1.JoinGameService"
 	// StartGameServiceName is the fully-qualified name of the StartGameService service.
 	StartGameServiceName = "game.v1.StartGameService"
-	// ClaimCardServiceName is the fully-qualified name of the ClaimCardService service.
-	ClaimCardServiceName = "game.v1.ClaimCardService"
+	// ReportReadyServiceName is the fully-qualified name of the ReportReadyService service.
+	ReportReadyServiceName = "game.v1.ReportReadyService"
 	// SubmitAnswerServiceName is the fully-qualified name of the SubmitAnswerService service.
 	SubmitAnswerServiceName = "game.v1.SubmitAnswerService"
 )
@@ -55,9 +55,9 @@ const (
 	// StartGameServiceStartGameProcedure is the fully-qualified name of the StartGameService's
 	// StartGame RPC.
 	StartGameServiceStartGameProcedure = "/game.v1.StartGameService/StartGame"
-	// ClaimCardServiceClaimCardProcedure is the fully-qualified name of the ClaimCardService's
-	// ClaimCard RPC.
-	ClaimCardServiceClaimCardProcedure = "/game.v1.ClaimCardService/ClaimCard"
+	// ReportReadyServiceReportReadyProcedure is the fully-qualified name of the ReportReadyService's
+	// ReportReady RPC.
+	ReportReadyServiceReportReadyProcedure = "/game.v1.ReportReadyService/ReportReady"
 	// SubmitAnswerServiceSubmitAnswerProcedure is the fully-qualified name of the SubmitAnswerService's
 	// SubmitAnswer RPC.
 	SubmitAnswerServiceSubmitAnswerProcedure = "/game.v1.SubmitAnswerService/SubmitAnswer"
@@ -343,74 +343,74 @@ func (UnimplementedStartGameServiceHandler) StartGame(context.Context, *connect.
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("game.v1.StartGameService.StartGame is not implemented"))
 }
 
-// ClaimCardServiceClient is a client for the game.v1.ClaimCardService service.
-type ClaimCardServiceClient interface {
-	ClaimCard(context.Context, *connect.Request[v1.ClaimCardRequest]) (*connect.Response[v1.ClaimCardResponse], error)
+// ReportReadyServiceClient is a client for the game.v1.ReportReadyService service.
+type ReportReadyServiceClient interface {
+	ReportReady(context.Context, *connect.Request[v1.ReportReadyRequest]) (*connect.Response[v1.ReportReadyResponse], error)
 }
 
-// NewClaimCardServiceClient constructs a client for the game.v1.ClaimCardService service. By
+// NewReportReadyServiceClient constructs a client for the game.v1.ReportReadyService service. By
 // default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
 // and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
 // connect.WithGRPC() or connect.WithGRPCWeb() options.
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewClaimCardServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ClaimCardServiceClient {
+func NewReportReadyServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ReportReadyServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	claimCardServiceMethods := v1.File_game_v1_game_proto.Services().ByName("ClaimCardService").Methods()
-	return &claimCardServiceClient{
-		claimCard: connect.NewClient[v1.ClaimCardRequest, v1.ClaimCardResponse](
+	reportReadyServiceMethods := v1.File_game_v1_game_proto.Services().ByName("ReportReadyService").Methods()
+	return &reportReadyServiceClient{
+		reportReady: connect.NewClient[v1.ReportReadyRequest, v1.ReportReadyResponse](
 			httpClient,
-			baseURL+ClaimCardServiceClaimCardProcedure,
-			connect.WithSchema(claimCardServiceMethods.ByName("ClaimCard")),
+			baseURL+ReportReadyServiceReportReadyProcedure,
+			connect.WithSchema(reportReadyServiceMethods.ByName("ReportReady")),
 			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
-// claimCardServiceClient implements ClaimCardServiceClient.
-type claimCardServiceClient struct {
-	claimCard *connect.Client[v1.ClaimCardRequest, v1.ClaimCardResponse]
+// reportReadyServiceClient implements ReportReadyServiceClient.
+type reportReadyServiceClient struct {
+	reportReady *connect.Client[v1.ReportReadyRequest, v1.ReportReadyResponse]
 }
 
-// ClaimCard calls game.v1.ClaimCardService.ClaimCard.
-func (c *claimCardServiceClient) ClaimCard(ctx context.Context, req *connect.Request[v1.ClaimCardRequest]) (*connect.Response[v1.ClaimCardResponse], error) {
-	return c.claimCard.CallUnary(ctx, req)
+// ReportReady calls game.v1.ReportReadyService.ReportReady.
+func (c *reportReadyServiceClient) ReportReady(ctx context.Context, req *connect.Request[v1.ReportReadyRequest]) (*connect.Response[v1.ReportReadyResponse], error) {
+	return c.reportReady.CallUnary(ctx, req)
 }
 
-// ClaimCardServiceHandler is an implementation of the game.v1.ClaimCardService service.
-type ClaimCardServiceHandler interface {
-	ClaimCard(context.Context, *connect.Request[v1.ClaimCardRequest]) (*connect.Response[v1.ClaimCardResponse], error)
+// ReportReadyServiceHandler is an implementation of the game.v1.ReportReadyService service.
+type ReportReadyServiceHandler interface {
+	ReportReady(context.Context, *connect.Request[v1.ReportReadyRequest]) (*connect.Response[v1.ReportReadyResponse], error)
 }
 
-// NewClaimCardServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
+// NewReportReadyServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewClaimCardServiceHandler(svc ClaimCardServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	claimCardServiceMethods := v1.File_game_v1_game_proto.Services().ByName("ClaimCardService").Methods()
-	claimCardServiceClaimCardHandler := connect.NewUnaryHandler(
-		ClaimCardServiceClaimCardProcedure,
-		svc.ClaimCard,
-		connect.WithSchema(claimCardServiceMethods.ByName("ClaimCard")),
+func NewReportReadyServiceHandler(svc ReportReadyServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	reportReadyServiceMethods := v1.File_game_v1_game_proto.Services().ByName("ReportReadyService").Methods()
+	reportReadyServiceReportReadyHandler := connect.NewUnaryHandler(
+		ReportReadyServiceReportReadyProcedure,
+		svc.ReportReady,
+		connect.WithSchema(reportReadyServiceMethods.ByName("ReportReady")),
 		connect.WithHandlerOptions(opts...),
 	)
-	return "/game.v1.ClaimCardService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return "/game.v1.ReportReadyService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case ClaimCardServiceClaimCardProcedure:
-			claimCardServiceClaimCardHandler.ServeHTTP(w, r)
+		case ReportReadyServiceReportReadyProcedure:
+			reportReadyServiceReportReadyHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-// UnimplementedClaimCardServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedClaimCardServiceHandler struct{}
+// UnimplementedReportReadyServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedReportReadyServiceHandler struct{}
 
-func (UnimplementedClaimCardServiceHandler) ClaimCard(context.Context, *connect.Request[v1.ClaimCardRequest]) (*connect.Response[v1.ClaimCardResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("game.v1.ClaimCardService.ClaimCard is not implemented"))
+func (UnimplementedReportReadyServiceHandler) ReportReady(context.Context, *connect.Request[v1.ReportReadyRequest]) (*connect.Response[v1.ReportReadyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("game.v1.ReportReadyService.ReportReady is not implemented"))
 }
 
 // SubmitAnswerServiceClient is a client for the game.v1.SubmitAnswerService service.
