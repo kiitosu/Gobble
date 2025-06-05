@@ -1,6 +1,10 @@
 # ビルド環境
 FROM golang:alpine3.21 AS builder
 
+# SQLiteのビルドに必要
+RUN apk update && apk add --no-cache gcc musl-dev
+RUN export CGO_ENABLED=1 
+
 # Dockerコンテナ内の作業ディレクトリ
 WORKDIR /app
 
