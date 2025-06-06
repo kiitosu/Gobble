@@ -20,27 +20,23 @@ const Game = (props: GameProps) => {
     const submitAnswerServiceClient = createClient(SubmitAnswerService, transport);
 
     const ws = useWebSocket();
-    const [wsMessage, setWsMessage] = useState<string>("");
-    const [card, setCard] = useState<{ id: number; text: string } | null>(null);
+    const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
 
     useEffect(() => {
         if (!ws) return;
         ws.onmessage = (e) => {
-            setWsMessage(e.data);
             try {
                 const msg = JSON.parse(e.data);
                 if (msg.event === "card" && msg.card) {
-                    setCard(msg.card);
+                    setCards(prev => [...prev, msg.card]);
                 }
             } catch {
                 // ignore parse error
             }
         };
-        // クリーンアップ
-        return () => {
-            ws.onmessage = null;
-        };
+        return () => { ws.onmessage = null; };
     }, [ws]);
+
 
     const handleReadyClick = async () => {
         if (props.player) {
@@ -61,13 +57,14 @@ const Game = (props: GameProps) => {
 
     return (
         <>
-            <div>サーバーからのメッセージ: {props.message}</div>
-            <div>WebSocket: {wsMessage}</div>
-            {card && (
+            {cards.length > 0 && (
                 <div>
-                    <h3>受信カード</h3>
-                    <div>カードID: {card.id}</div>
-                    <div>内容: {card.text}</div>
+                    <h3>受信カード一覧</h3>
+                    {cards.map(card => (
+                        <div key={card.id}>
+                            カードID: {card.id} 内容: {card.text}
+                        </div>
+                    ))}
                 </div>
             )}
             {props.player && (
