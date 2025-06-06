@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"example/ent/player"
 	gamev1 "example/gen/game/v1"
 	"example/gen/game/v1/gamev1connect"
+	"example/internal/cardgen"
 
 	"github.com/gorilla/websocket"
 
@@ -40,8 +42,6 @@ const DB_FILE = "file:backend/.db/ent.db?_fk=1"
 func GetDbClient(
 	ctx context.Context,
 ) *ent.Client {
-	// DBにゲーム情報を書き込み
-	// ファイルベースのSQLiteデータベースを持つent.Clientを作成します。
 	client, err := ent.Open(dialect.SQLite, DB_FILE)
 	if err != nil {
 		log.Fatalf("failed opening connection to sqlite: %v", err)
@@ -107,6 +107,21 @@ func (s *GameServer) CreateGame(
 	if err != nil {
 		log.Printf("failed creating a todo: %v", err)
 		return nil, err
+	}
+
+	// Dobbleカード生成
+	cards, _, err := cardgen.GenerateDobbleCards(3)
+	if err != nil {
+		log.Printf("failed to generate dobble cards: %v", err)
+	} else {
+		var cs []Card
+		for _, c := range cards {
+			cs = append(cs, Card{
+				ID:   c.ID,
+				Text: "symbols: " + fmt.Sprint(c.Symbols),
+			})
+		}
+		unsentCards[game.ID] = cs
 	}
 
 	res := connect.NewResponse(&gamev1.CreateGameResponse{
@@ -209,6 +224,8 @@ func (s *GameServer) ReportReady(
 	if err != nil {
 		log.Printf("Failed to update playerId %d to %s", playerIdInt, status)
 	}
+
+	log.Printf("Player %s is READY", playerId)
 	return connect.NewResponse(&gamev1.ReportReadyResponse{}), nil
 
 }
@@ -217,10 +234,6 @@ func (s *GameServer) SubmitAnswer(
 	ctx context.Context,
 	req *connect.Request[gamev1.SubmitAnswerRequest],
 ) (*connect.Response[gamev1.SubmitAnswerResponse], error) {
-	// 受け取った回答が正しいか確認する
-	// TODO : 実装する
-
-	// 返却値
 	message := "correct!!!"
 
 	// player_idからgame_idを特定し、そのゲームのクライアントにbroadcast
@@ -344,7 +357,12 @@ func withCORS(h http.Handler) http.Handler {
 	}).Handler(h)
 }
 
-/* 100ms事にデータベースの状態を管理してwsbroadcastするgoroutine */
+type Card struct {
+	ID   int    `json:"id"`
+	Text string `json:"text"`
+}
+
+var unsentCards = make(map[int][]Card)
 
 type GameStatus struct {
 	AllStarting bool
@@ -352,7 +370,9 @@ type GameStatus struct {
 	PlayerCount int
 }
 
+/* 100ms事にデータベースの状態を管理してwsbroadcastするgoroutine */
 func monitorGames() {
+	log.Printf("monitorGames started")
 	lastStatusMap := make(map[int]GameStatus)
 	for {
 		client := GetDbClient(context.Background())
@@ -363,7 +383,10 @@ func monitorGames() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
+		log.Printf("%d games found.", len(games))
 		for _, game := range games {
+			// log.Printf("Game is %v", game)
+
 			players, err := client.Player.Query().Where(player.HasParentWith(g.IDEQ(game.ID))).All(context.Background())
 			if err != nil {
 				log.Printf("monitorGames: failed to query players: %v", err)
@@ -372,6 +395,7 @@ func monitorGames() {
 			playerCount := len(players)
 			allStarting := true
 			allReady := true
+			log.Printf("%d players found.", playerCount)
 			for _, p := range players {
 				if p.Status != "STARTING" {
 					allStarting = false
@@ -389,6 +413,7 @@ func monitorGames() {
 				}
 				b, _ := json.Marshal(msg)
 				broadcastToGame(game.ID, b)
+				log.Printf("message %v broadcasted", err)
 			}
 			// 全員READYになったタイミング
 			if allReady && (!ok || !prev.AllReady) && playerCount > 0 {
@@ -398,6 +423,21 @@ func monitorGames() {
 				}
 				b, _ := json.Marshal(msg)
 				broadcastToGame(game.ID, b)
+				log.Printf("message %v broadcasted", err)
+
+				cards := unsentCards[game.ID]
+				if len(cards) > 0 {
+					card := cards[0]
+					unsentCards[game.ID] = cards[1:]
+					cardMsg := map[string]interface{}{
+						"event":   "card",
+						"game_id": game.ID,
+						"card":    card,
+					}
+					cb, _ := json.Marshal(cardMsg)
+					broadcastToGame(game.ID, cb)
+					log.Printf("message %v broadcasted", err)
+				}
 			}
 			lastStatusMap[game.ID] = GameStatus{
 				AllStarting: allStarting,
@@ -406,7 +446,7 @@ func monitorGames() {
 			}
 		}
 		client.Close()
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 

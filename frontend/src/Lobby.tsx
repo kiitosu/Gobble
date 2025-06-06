@@ -135,6 +135,20 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           console.log(
             `created game is ${response.player?.gameId} player is ${response.player?.id}`
           );
+
+          setGameStatus("JOINING");
+
+          setGames((prevGames) =>
+            prevGames.map((g) =>
+              g.id === response.player?.gameId
+                ? { ...g, localStatus: "JOINING" }
+                : g
+            )
+          );
+
+          if (response.player) {
+            setPlayer(response.player);
+          }
         }}
       >
         <input
