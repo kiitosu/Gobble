@@ -72,7 +72,8 @@ service ReportReadyService {
 
 /* Submit Answer */
 message SubmitAnswerRequest {
-    string answer = 1;
+    string player_id = 1;
+    string answer = 2;
 }
 
 message SubmitAnswerResponse {

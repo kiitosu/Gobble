@@ -221,8 +221,26 @@ func (s *GameServer) SubmitAnswer(
 	// 返却値
 	message := "correct!!!"
 
-	// websocketHandlerに通知、websocketでブロードキャスト送信する
-	// broadcast([]byte(message))
+	// player_idからgame_idを特定し、そのゲームのクライアントにbroadcast
+	playerIDStr := req.Msg.PlayerId
+	playerID, err := strconv.Atoi(playerIDStr)
+	if err != nil {
+		log.Printf("invalid playerID: %v", err)
+	} else {
+		client := GetDbClient(ctx)
+		defer client.Close()
+		playerEnt, err := client.Player.Query().Where(player.IDEQ(playerID)).Only(ctx)
+		if err != nil {
+			log.Printf("failed to query player: %v", err)
+		} else {
+			gameEnt, err := playerEnt.QueryParent().Only(ctx)
+			if err != nil {
+				log.Printf("failed to query parent game: %v", err)
+			} else {
+				broadcastToGame(gameEnt.ID, []byte(message))
+			}
+		}
+	}
 
 	// 戻り値を定義
 	res := connect.NewResponse(&gamev1.SubmitAnswerResponse{

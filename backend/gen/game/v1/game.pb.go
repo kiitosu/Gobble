@@ -581,7 +581,8 @@ func (*ReportReadyResponse) Descriptor() ([]byte, []int) {
 // Submit Answer
 type SubmitAnswerRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Answer        string                 `protobuf:"bytes,1,opt,name=answer,proto3" json:"answer,omitempty"`
+	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	Answer        string                 `protobuf:"bytes,2,opt,name=answer,proto3" json:"answer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -614,6 +615,13 @@ func (x *SubmitAnswerRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use SubmitAnswerRequest.ProtoReflect.Descriptor instead.
 func (*SubmitAnswerRequest) Descriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SubmitAnswerRequest) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
 }
 
 func (x *SubmitAnswerRequest) GetAnswer() string {
@@ -700,9 +708,10 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x11StartGameResponse\"1\n" +
 	"\x12ReportReadyRequest\x12\x1b\n" +
 	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\"\x15\n" +
-	"\x13ReportReadyResponse\"-\n" +
-	"\x13SubmitAnswerRequest\x12\x16\n" +
-	"\x06answer\x18\x01 \x01(\tR\x06answer\"5\n" +
+	"\x13ReportReadyResponse\"J\n" +
+	"\x13SubmitAnswerRequest\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12\x16\n" +
+	"\x06answer\x18\x02 \x01(\tR\x06answer\"5\n" +
 	"\x14SubmitAnswerResponse\x12\x1d\n" +
 	"\n" +
 	"is_correct\x18\x01 \x01(\tR\tisCorrect2\\\n" +
