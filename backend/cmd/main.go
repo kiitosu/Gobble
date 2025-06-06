@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	g "example/ent/game"
 	"example/ent/player"
 	gamev1 "example/gen/game/v1"
 	"example/gen/game/v1/gamev1connect"
@@ -344,6 +346,70 @@ func withCORS(h http.Handler) http.Handler {
 
 /* 100ms事にデータベースの状態を管理してwsbroadcastするgoroutine */
 
+type GameStatus struct {
+	AllStarting bool
+	AllReady    bool
+	PlayerCount int
+}
+
+func monitorGames() {
+	lastStatusMap := make(map[int]GameStatus)
+	for {
+		client := GetDbClient(context.Background())
+		games, err := client.Game.Query().All(context.Background())
+		if err != nil {
+			log.Printf("monitorGames: failed to query games: %v", err)
+			client.Close()
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		for _, game := range games {
+			players, err := client.Player.Query().Where(player.HasParentWith(g.IDEQ(game.ID))).All(context.Background())
+			if err != nil {
+				log.Printf("monitorGames: failed to query players: %v", err)
+				continue
+			}
+			playerCount := len(players)
+			allStarting := true
+			allReady := true
+			for _, p := range players {
+				if p.Status != "STARTING" {
+					allStarting = false
+				}
+				if p.Status != "READY" {
+					allReady = false
+				}
+			}
+			prev, ok := lastStatusMap[game.ID]
+			// 全員STARTINGになったタイミング
+			if allStarting && (!ok || !prev.AllStarting) && playerCount > 0 {
+				msg := map[string]interface{}{
+					"event":   "all_starting",
+					"game_id": game.ID,
+				}
+				b, _ := json.Marshal(msg)
+				broadcastToGame(game.ID, b)
+			}
+			// 全員READYになったタイミング
+			if allReady && (!ok || !prev.AllReady) && playerCount > 0 {
+				msg := map[string]interface{}{
+					"event":   "all_ready",
+					"game_id": game.ID,
+				}
+				b, _ := json.Marshal(msg)
+				broadcastToGame(game.ID, b)
+			}
+			lastStatusMap[game.ID] = GameStatus{
+				AllStarting: allStarting,
+				AllReady:    allReady,
+				PlayerCount: playerCount,
+			}
+		}
+		client.Close()
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
 /* main */
 func main() {
 	// サーバー起動時に一度だけスキーマ作成
@@ -359,6 +425,9 @@ func main() {
 		}
 	}
 	client.Close()
+
+	// 100msごとの監視goroutine起動
+	go monitorGames()
 
 	// マルチプレクサ(ルータ)を生成
 	mux := http.NewServeMux()
