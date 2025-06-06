@@ -76,6 +76,7 @@ const (
 	StatusSTARTING Status = "STARTING"
 	StatusREADY    Status = "READY"
 	StatusPLAYING  Status = "PLAYING"
+	StatusFINISHED Status = "FINISHED"
 )
 
 func (s Status) String() string {
@@ -85,7 +86,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusJOINING, StatusSTARTING, StatusREADY, StatusPLAYING:
+	case StatusJOINING, StatusSTARTING, StatusREADY, StatusPLAYING, StatusFINISHED:
 		return nil
 	default:
 		return fmt.Errorf("player: invalid enum value for status field: %q", s)

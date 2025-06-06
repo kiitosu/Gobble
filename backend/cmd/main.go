@@ -371,6 +371,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		PlayerID: initMsg.PlayerID,
 	}
 	defer func() {
+		log.Printf("websocket disconnected execute defer func")
 		defer conn.Close()
 		delete(gameClients[initMsg.GameID], conn)
 		// 切断通知を同じゲームのクライアントにbroadcast
@@ -381,6 +382,20 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		b, _ := json.Marshal(disconnectMsg)
 		broadcastToGame(initMsg.GameID, b)
+
+		client := GetDbClient(context.Background())
+		defer client.Close()
+		_, err := client.Player.Update().
+			Where(player.HasParentWith(g.IDEQ(initMsg.GameID))).
+			SetStatus("FINISHED").
+			Save(context.Background())
+		if err != nil {
+			log.Fatalf("failed updating player status")
+		}
+		_, err = client.Game.UpdateOneID(initMsg.GameID).SetStatus("FINISHED").Save(context.Background())
+		if err != nil {
+			log.Fatalf("failed updating player status")
+		}
 	}()
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte("Hello from service!!"))
