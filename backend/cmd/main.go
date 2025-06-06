@@ -242,20 +242,27 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	clients[conn] = true
 	defer delete(clients, conn)
 
+	// 初期通信
+	_, message, err := conn.ReadMessage()
+	if err != nil {
+		log.Println("Read error:", err)
+	}
+	log.Printf("Received: %s", message)
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte("Hello from service!!"))
+	if err != nil {
+		log.Println("Write error:", err)
+	}
+	log.Print("Write message")
+
+	// 常時通信
 	for {
+		// 基本的に何もしない。クライアント <-> サーバ間のやり取りは、gRPC + ws  broadcastを使う
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("Read error:", err)
-			break
 		}
 		log.Printf("Received: %s", message)
-
-		err = conn.WriteMessage(websocket.TextMessage, []byte("Hello from service!!"))
-		if err != nil {
-			log.Println("Write error:", err)
-			break
-		}
-		log.Print("Write message")
 	}
 }
 
@@ -277,6 +284,8 @@ func withCORS(h http.Handler) http.Handler {
 		AllowedHeaders: []string{"Content-Type", "X-User-Agent", "Connect-Protocol-Version"},
 	}).Handler(h)
 }
+
+/* 100ms事にデータベースの状態を管理してwsbroadcastするgoroutine */
 
 /* main */
 func main() {
