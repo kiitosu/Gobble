@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"example/ent/game"
 	g "example/ent/game"
 	"example/ent/player"
 	gamev1 "example/gen/game/v1"
@@ -121,6 +121,7 @@ func (s *GameServer) CreateGame(
 				Text: "symbols: " + fmt.Sprint(c.Symbols),
 			})
 		}
+		log.Printf("%d cards created", len(cs))
 		unsentCards[game.ID] = cs
 	}
 
@@ -132,7 +133,7 @@ func (s *GameServer) CreateGame(
 		},
 	})
 
-	log.Printf("Game %s created by %s.", game_name, player_name)
+	log.Printf("Game %s id of %d created by %s.", game_name, game.ID, player_name)
 	return res, nil
 }
 
@@ -178,23 +179,35 @@ func (s *GameServer) StartGame(
 		return nil, err
 	}
 
-	player, err := client.Player.Query().Where(player.IDEQ(playerIDInt)).Only((ctx))
-	if err != nil {
-		log.Printf("Failed to query player: %v", err)
-		return nil, err
-	}
-	log.Printf("player is %v", player)
-
-	game, err := player.QueryParent().Only((ctx))
-	if err != nil {
-		log.Printf("Failed to query parent: %v", err)
-		return nil, err
-	}
-
-	_, err = client.Player.UpdateOne(player).SetStatus("STARTING").Save(ctx)
+	_, err = client.Player.UpdateOneID(playerIDInt).SetStatus("STARTING").Save(ctx)
 	if err != nil {
 		log.Printf("Failed to update player status: %v", err)
 		return nil, err
+	}
+	gameId := req.Msg.GameId
+	gamaIdInt, err := strconv.Atoi(gameId)
+	if err != nil {
+		log.Printf("Failed to conv gameId %s", gameId)
+	}
+
+	notStartingCount, err := client.Player.Query().
+		Where(
+			player.HasParentWith(g.IDEQ(gamaIdInt)),
+			player.StatusNEQ(player.StatusSTARTING),
+		).Count(context.Background())
+	if err != nil {
+		// error handling
+	}
+	allStarting := notStartingCount == 0
+
+	if allStarting {
+		msg := map[string]interface{}{
+			"event":   "all_starting",
+			"game_id": game.ID,
+		}
+		b, _ := json.Marshal(msg)
+		broadcastToGame(gamaIdInt, b)
+		log.Printf("message %v broadcasted on starting", msg)
 	}
 
 	res := connect.NewResponse(&gamev1.StartGameResponse{})
@@ -203,6 +216,32 @@ func (s *GameServer) StartGame(
 
 	return res, nil
 
+}
+
+func DistributeCard(client *ent.Client, gameId int) {
+	cards := unsentCards[gameId]
+	log.Printf("%d cards remaining with game id %d", len(cards), gameId)
+	if len(cards) > 0 {
+		card := cards[0]
+		unsentCards[gameId] = cards[1:]
+		cardMsg := map[string]interface{}{
+			"event":   "card",
+			"game_id": gameId,
+			"card":    card,
+		}
+		cb, _ := json.Marshal(cardMsg)
+		broadcastToGame(gameId, cb)
+		log.Printf("message %v broadcasted on ready", cardMsg)
+
+		// カード送信後はPLAYINGとし、次のREADYを待ち受けられるようにする
+		_, err := client.Player.Update().
+			Where(player.HasParentWith(g.IDEQ(gameId))).
+			SetStatus("PLAYING").
+			Save(context.Background())
+		if err != nil {
+			log.Fatalf("failed updating player status")
+		}
+	}
 }
 
 func (s *GameServer) ReportReady(
@@ -219,15 +258,42 @@ func (s *GameServer) ReportReady(
 		log.Printf("invalid playerId: %d", playerIdInt)
 	}
 
+	parentIDs, err := client.Player.Query().
+		Where(player.IDEQ(playerIdInt)).
+		Select("player_parent").
+		Ints(ctx)
+	if err != nil {
+		// error handling
+	}
+
+	var gameId = 0
+	if len(parentIDs) > 0 {
+		gameId = parentIDs[0]
+		// gameIDが該当プレイヤーのgame_id
+	}
+
 	status := player.StatusREADY
 	_, err = client.Player.UpdateOneID(playerIdInt).SetStatus(status).Save(ctx)
 	if err != nil {
 		log.Printf("Failed to update playerId %d to %s", playerIdInt, status)
 	}
 
+	notReadyCount, err := client.Player.Query().
+		Where(
+			player.HasParentWith(g.IDEQ(gameId)),
+			player.StatusNEQ("READY"),
+		).Count(context.Background())
+	if err != nil {
+		// error handling
+	}
+	allReady := notReadyCount == 0
+
+	if allReady {
+		DistributeCard(client, gameId)
+	}
+
 	log.Printf("Player %s is READY", playerId)
 	return connect.NewResponse(&gamev1.ReportReadyResponse{}), nil
-
 }
 
 func (s *GameServer) SubmitAnswer(
@@ -278,7 +344,6 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Upgrade error:", err)
 		return
 	}
-	defer conn.Close()
 
 	// 初回通信でgame_id, player_idをJSONで受信
 	type InitMsg struct {
@@ -306,6 +371,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		PlayerID: initMsg.PlayerID,
 	}
 	defer func() {
+		defer conn.Close()
 		delete(gameClients[initMsg.GameID], conn)
 		// 切断通知を同じゲームのクライアントにbroadcast
 		disconnectMsg := map[string]interface{}{
@@ -364,92 +430,6 @@ type Card struct {
 
 var unsentCards = make(map[int][]Card)
 
-type GameStatus struct {
-	AllStarting bool
-	AllReady    bool
-	PlayerCount int
-}
-
-/* 100ms事にデータベースの状態を管理してwsbroadcastするgoroutine */
-func monitorGames() {
-	log.Printf("monitorGames started")
-	lastStatusMap := make(map[int]GameStatus)
-	for {
-		client := GetDbClient(context.Background())
-		games, err := client.Game.Query().All(context.Background())
-		if err != nil {
-			log.Printf("monitorGames: failed to query games: %v", err)
-			client.Close()
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
-		log.Printf("%d games found.", len(games))
-		for _, game := range games {
-			// log.Printf("Game is %v", game)
-
-			players, err := client.Player.Query().Where(player.HasParentWith(g.IDEQ(game.ID))).All(context.Background())
-			if err != nil {
-				log.Printf("monitorGames: failed to query players: %v", err)
-				continue
-			}
-			playerCount := len(players)
-			allStarting := true
-			allReady := true
-			log.Printf("%d players found.", playerCount)
-			for _, p := range players {
-				if p.Status != "STARTING" {
-					allStarting = false
-				}
-				if p.Status != "READY" {
-					allReady = false
-				}
-			}
-			prev, ok := lastStatusMap[game.ID]
-			// 全員STARTINGになったタイミング
-			if allStarting && (!ok || !prev.AllStarting) && playerCount > 0 {
-				msg := map[string]interface{}{
-					"event":   "all_starting",
-					"game_id": game.ID,
-				}
-				b, _ := json.Marshal(msg)
-				broadcastToGame(game.ID, b)
-				log.Printf("message %v broadcasted", err)
-			}
-			// 全員READYになったタイミング
-			if allReady && (!ok || !prev.AllReady) && playerCount > 0 {
-				msg := map[string]interface{}{
-					"event":   "all_ready",
-					"game_id": game.ID,
-				}
-				b, _ := json.Marshal(msg)
-				broadcastToGame(game.ID, b)
-				log.Printf("message %v broadcasted", err)
-
-				cards := unsentCards[game.ID]
-				if len(cards) > 0 {
-					card := cards[0]
-					unsentCards[game.ID] = cards[1:]
-					cardMsg := map[string]interface{}{
-						"event":   "card",
-						"game_id": game.ID,
-						"card":    card,
-					}
-					cb, _ := json.Marshal(cardMsg)
-					broadcastToGame(game.ID, cb)
-					log.Printf("message %v broadcasted", err)
-				}
-			}
-			lastStatusMap[game.ID] = GameStatus{
-				AllStarting: allStarting,
-				AllReady:    allReady,
-				PlayerCount: playerCount,
-			}
-		}
-		client.Close()
-		time.Sleep(1000 * time.Millisecond)
-	}
-}
-
 /* main */
 func main() {
 	// サーバー起動時に一度だけスキーマ作成
@@ -465,9 +445,6 @@ func main() {
 		}
 	}
 	client.Close()
-
-	// 100msごとの監視goroutine起動
-	go monitorGames()
 
 	// マルチプレクサ(ルータ)を生成
 	mux := http.NewServeMux()
