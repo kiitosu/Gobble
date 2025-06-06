@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { WebSocketProvider } from "./WebSocketContext";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { JoinGameService, CreateGameService, GetGamesService, StartGameService } from "../gen/game/v1/game_pb";
@@ -23,6 +24,26 @@ const Lobby: React.FC<LobbyProps> = ({
   setGameStatus,
   setStartedGame,
 }) => {
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  // player情報が揃ったらWebSocket接続
+  useEffect(() => {
+    if (player && player.gameId && player.id && !ws) {
+      const socket = new WebSocket("ws://localhost:8080/ws");
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ game_id: player.gameId, player_id: player.id }));
+      };
+      setWs(socket);
+    }
+    // クリーンアップ: Lobbyアンマウント時にWebSocket切断
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player]);
+
   const transport = createConnectTransport({
     baseUrl: "http://localhost:8080"
   });
@@ -127,14 +148,16 @@ const Lobby: React.FC<LobbyProps> = ({
     ) : null;
 
   return (
-    <div>
-      {/* ゲーム作成フォーム */}
-      {createGameForm}
+    <WebSocketProvider value={ws}>
+      <div>
+        {/* ゲーム作成フォーム */}
+        {createGameForm}
 
-      {/* ゲーム情報表示 */}
-      <div>Games</div>
-      <ul>{gameList}</ul>
-    </div>
+        {/* ゲーム情報表示 */}
+        <div>Games</div>
+        <ul>{gameList}</ul>
+      </div>
+    </WebSocketProvider>
   );
 };
 

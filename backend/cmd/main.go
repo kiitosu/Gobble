@@ -20,11 +20,18 @@ import (
 
 	"example/ent"
 
+	"encoding/json"
+
 	"entgo.io/ent/dialect"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var clients = make(map[*websocket.Conn]bool)
+type ClientInfo struct {
+	GameID   int
+	PlayerID int
+}
+
+var gameClients = make(map[int]map[*websocket.Conn]ClientInfo)
 
 const DB_FILE = "file:backend/.db/ent.db?_fk=1"
 
@@ -215,7 +222,7 @@ func (s *GameServer) SubmitAnswer(
 	message := "correct!!!"
 
 	// websocketHandlerに通知、websocketでブロードキャスト送信する
-	broadcast([]byte(message))
+	// broadcast([]byte(message))
 
 	// 戻り値を定義
 	res := connect.NewResponse(&gamev1.SubmitAnswerResponse{
@@ -239,15 +246,43 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
-	clients[conn] = true
-	defer delete(clients, conn)
 
-	// 初期通信
+	// 初回通信でgame_id, player_idをJSONで受信
+	type InitMsg struct {
+		GameID   int `json:"game_id"`
+		PlayerID int `json:"player_id"`
+	}
 	_, message, err := conn.ReadMessage()
 	if err != nil {
 		log.Println("Read error:", err)
+		return
 	}
 	log.Printf("Received: %s", message)
+	var initMsg InitMsg
+	if err := json.Unmarshal(message, &initMsg); err != nil {
+		log.Println("Invalid init message:", err)
+		return
+	}
+
+	// gameClientsに登録
+	if gameClients[initMsg.GameID] == nil {
+		gameClients[initMsg.GameID] = make(map[*websocket.Conn]ClientInfo)
+	}
+	gameClients[initMsg.GameID][conn] = ClientInfo{
+		GameID:   initMsg.GameID,
+		PlayerID: initMsg.PlayerID,
+	}
+	defer func() {
+		delete(gameClients[initMsg.GameID], conn)
+		// 切断通知を同じゲームのクライアントにbroadcast
+		disconnectMsg := map[string]interface{}{
+			"event":     "disconnect",
+			"game_id":   initMsg.GameID,
+			"player_id": initMsg.PlayerID,
+		}
+		b, _ := json.Marshal(disconnectMsg)
+		broadcastToGame(initMsg.GameID, b)
+	}()
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte("Hello from service!!"))
 	if err != nil {
@@ -257,21 +292,25 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 常時通信
 	for {
-		// 基本的に何もしない。クライアント <-> サーバ間のやり取りは、gRPC + ws  broadcastを使う
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("Read error:", err)
+			break
 		}
 		log.Printf("Received: %s", message)
 	}
 }
 
-func broadcast(message []byte) {
-	for client := range clients {
-		err := client.WriteMessage(websocket.TextMessage, message)
+func broadcastToGame(gameID int, message []byte) {
+	conns, ok := gameClients[gameID]
+	if !ok {
+		return
+	}
+	for conn := range conns {
+		err := conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
-			client.Close()
-			delete(clients, client)
+			conn.Close()
+			delete(conns, conn)
 		}
 	}
 }

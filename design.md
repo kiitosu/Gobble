@@ -214,12 +214,12 @@ sequenceDiagram
     note over c1,d: ゲーム作成
     c1 ->> c1: ゲーム作成
     activate c1
-    c1 ->>+ s: websocket接続確立
-    s ->>- s: websocketコネクションプール(ゲームID)
     c1 ->>+ s: ゲーム作成
     s ->> d: ゲームレコード作成
     s ->> d: ユーザレコード作成(GameId, status=Joining)
-    s ->>- c1: 作成結果(ゲームID、ユーザID)
+    s ->>- c1: 作成結果(ゲームID、プレイヤーID)
+    c1 ->>+ s: websocket接続確立(ゲームID、)
+    s ->>- s: websocketコネクションプール(ゲームID)
     deactivate c1
 
     alt websocket接続が切れた
@@ -232,12 +232,12 @@ sequenceDiagram
     s ->>- c2: ゲーム情報
     c2 ->> c2: ゲーム参加(ゲームID)
     activate c2
-    c2 ->>+ s: websocket接続確立
-    s ->>- s: websocketコネクションプール(ゲームID)
     c2 ->>+ s: ゲーム参加(ゲームID)
     s ->> d: ユーザレコード作成(GameId, status=Joining)
-    s ->>- c2: 参加結果(ゲームID, ユーザID)
+    s ->>- c2: 参加結果(ゲームID, プレイヤーID)
+    c2 ->>+ s: websocket接続確立(ゲームID, プレイヤーID)
     deactivate c2
+    s ->>- s: websocketコネクションプール
 
     alt 2人以上参加している (ゲーム状態管理ルーチン)
         s ->> d: ゲームをREADY状態にする(ゲームID)
@@ -248,7 +248,7 @@ sequenceDiagram
     %% ゲーム開始
     note over c1,d: ゲーム開始
 
-    c1 ->>+ s: ゲーム開始(ゲームID, ユーザID)
+    c1 ->>+ s: ゲーム開始(ゲームID, プレイヤーID)
     s ->>- d: ユーザ状態更新(to Starting)
 
     c2 ->>+ s: ゲーム開始(ゲームID)
@@ -275,13 +275,13 @@ sequenceDiagram
             s ->> c1: カード通知(カードID、prevカードID)
         end
 
-        c1 ->>+ s: 回答(ユーザID, アイテムID, カードID, prevカードID)
+        c1 ->>+ s: 回答(プレイヤーID, アイテムID, カードID, prevカードID)
         note right of s: 例としてc1が答えた場合を図示<br>遅かった方はスコア増減しない
 
         alt あっている場合
-            s ->> d: スコアプラス(ユーザID)
+            s ->> d: スコアプラス(プレイヤーID)
         else 間違っている場合
-            s ->> d: スコアマイナス(ユーザID)
+            s ->> d: スコアマイナス(プレイヤーID)
         end
         s ->> c2: スコア通知(broadcast)
         s ->>- c1: スコア通知(broadcast)
