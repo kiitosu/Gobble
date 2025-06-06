@@ -11,7 +11,6 @@ import {
 import type { Game, Player } from "../gen/game/v1/game_pb";
 import GameComponent from "./Game";
 
-
 type LobbyProps = {};
 
 const Lobby: React.FC<LobbyProps> = ({}) => {
@@ -21,13 +20,16 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [games, setGames] = useState<Game[]>([]);
   const [gameName, setGameName] = useState("");
 
-    const transport = createConnectTransport({
+  const transport = createConnectTransport({
     baseUrl: "http://localhost:8080",
   });
   const createGameClient = createClient(CreateGameService, transport);
   const joinGameServiceclient = createClient(JoinGameService, transport);
   const startGameServiceclient = createClient(StartGameService, transport);
-  const getGamesClient = useMemo(() => createClient(GetGamesService, transport), [transport]);
+  const getGamesClient = useMemo(
+    () => createClient(GetGamesService, transport),
+    [transport]
+  );
 
   // player情報が揃ったらWebSocket接続
   useEffect(() => {
@@ -39,6 +41,21 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
         );
       };
       setWs(socket);
+
+      socket.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.event === "STARTED") {
+            const fetchGames = async () => {
+              const response = await getGamesClient.getGames({});
+              setGames(response.games);
+            };
+            fetchGames();
+          }
+        } catch {
+          // ignore parse error
+        }
+      };
     }
     // クリーンアップ: Lobbyアンマウント時にWebSocket切断
     return () => {
@@ -120,9 +137,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             `created game is ${response.player?.gameId} player is ${response.player?.id}`
           );
 
-          if (response.player === undefined ) return;
+          if (response.player === undefined) return;
           const p = response.player;
-          setPlayer(p)
+          setPlayer(p);
 
           setGames((prevGames) => [
             ...prevGames,
@@ -130,8 +147,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               id: p.gameId,
               name: gameName,
               status: "CREATED",
-              $typeName: "game.v1.Game"
-            }
+              $typeName: "game.v1.Game",
+            },
           ]);
 
           setGameStatus("CREATED");
@@ -148,12 +165,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
   return (
     <WebSocketProvider value={ws}>
-      {(gameStatus === "STARTED") || (gameStatus === "JOINED") && player ? (
-        <GameComponent
-            message=""
-            player={player}
-            status={gameStatus}
-        />
+      {gameStatus === "STARTED" || (gameStatus === "JOINED" && player) ? (
+        <GameComponent message="" player={player} status={gameStatus} />
       ) : (
         <div>
           {/* ゲーム作成フォーム */}

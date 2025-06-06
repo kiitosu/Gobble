@@ -133,6 +133,13 @@ func (s *GameServer) CreateGame(
 		},
 	})
 
+	msg := map[string]interface{}{
+		"event": "STARTED",
+	}
+	b, _ := json.Marshal(msg)
+	broadcastToGame(game.ID, b)
+	log.Printf("message %v broadcasted on game created", msg)
+
 	log.Printf("Game %s id of %d created by %s.", game_name, game.ID, player_name)
 	return res, nil
 }
@@ -179,7 +186,7 @@ func (s *GameServer) StartGame(
 		return nil, err
 	}
 
-	_, err = client.Player.UpdateOneID(playerIDInt).SetStatus("STARTING").Save(ctx)
+	_, err = client.Player.UpdateOneID(playerIDInt).SetStatus("STARTED").Save(ctx)
 	if err != nil {
 		log.Printf("Failed to update player status: %v", err)
 		return nil, err
@@ -190,29 +197,17 @@ func (s *GameServer) StartGame(
 		log.Printf("Failed to conv gameId %s", gameId)
 	}
 
-	notStartingCount, err := client.Player.Query().
-		Where(
-			player.HasParentWith(g.IDEQ(gamaIdInt)),
-			player.StatusNEQ(player.StatusSTARTING),
-		).Count(context.Background())
-	if err != nil {
-		// error handling
+	msg := map[string]interface{}{
+		"event":   "all_starting",
+		"game_id": game.ID,
 	}
-	allStarting := notStartingCount == 0
-
-	if allStarting {
-		msg := map[string]interface{}{
-			"event":   "all_starting",
-			"game_id": game.ID,
-		}
-		b, _ := json.Marshal(msg)
-		broadcastToGame(gamaIdInt, b)
-		log.Printf("message %v broadcasted on starting", msg)
-	}
+	b, _ := json.Marshal(msg)
+	broadcastToGame(gamaIdInt, b)
+	log.Printf("message %v broadcasted on starting", msg)
 
 	res := connect.NewResponse(&gamev1.StartGameResponse{})
 
-	log.Printf("Player %s of game %s is STARTING", player.Name, game.Name)
+	log.Printf("Player %s of game %s is STARTED", player_id, gameId)
 
 	return res, nil
 

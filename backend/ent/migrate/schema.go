@@ -45,7 +45,7 @@ var (
 	PlayersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"JOINING", "STARTING", "READY", "PLAYING", "FINISHED"}, Default: "JOINING"},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"JOINING", "STARTED", "READY", "PLAYING", "FINISHED"}, Default: "JOINING"},
 		{Name: "player_parent", Type: field.TypeInt, Nullable: true},
 	}
 	// PlayersTable holds the schema information for the "players" table.
