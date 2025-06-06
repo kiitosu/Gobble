@@ -2,36 +2,35 @@ import React, { useEffect, useState, useMemo } from "react";
 import { WebSocketProvider } from "./WebSocketContext";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import { JoinGameService, CreateGameService, GetGamesService, StartGameService } from "../gen/game/v1/game_pb";
+import {
+  JoinGameService,
+  CreateGameService,
+  GetGamesService,
+  StartGameService,
+} from "../gen/game/v1/game_pb";
 import type { Game as ProtoGame, Player } from "../gen/game/v1/game_pb";
+import Game from "./Game";
 
-type Game = ProtoGame & {
+type GameProp = ProtoGame & {
   localStatus?: string;
 };
 
-type LobbyProps = {
-  gameStatus: string;
-  player?: Player;
-  setPlayer: (player: Player) => void;
-  setGameStatus: (status: string) => void;
-  setStartedGame: (game: Game) => void;
-};
+type LobbyProps = {};
 
-const Lobby: React.FC<LobbyProps> = ({
-  gameStatus,
-  player,
-  setPlayer,
-  setGameStatus,
-  setStartedGame,
-}) => {
+const Lobby: React.FC<LobbyProps> = ({}) => {
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [startedGame, setStartedGame] = useState<GameProp | null>(null);
+  const [gameStatus, setGameStatus] = useState("");
+  const [player, setPlayer] = useState<Player>();
 
   // player情報が揃ったらWebSocket接続
   useEffect(() => {
     if (player && player.gameId && player.id && !ws) {
       const socket = new WebSocket("ws://localhost:8080/ws");
       socket.onopen = () => {
-        socket.send(JSON.stringify({ game_id: player.gameId, player_id: player.id }));
+        socket.send(
+          JSON.stringify({ game_id: player.gameId, player_id: player.id })
+        );
       };
       setWs(socket);
     }
@@ -45,20 +44,20 @@ const Lobby: React.FC<LobbyProps> = ({
   }, [player]);
 
   const transport = createConnectTransport({
-    baseUrl: "http://localhost:8080"
+    baseUrl: "http://localhost:8080",
   });
   const createGameClient = createClient(CreateGameService, transport);
   const joinGameServiceclient = createClient(JoinGameService, transport);
   const startGameServiceclient = createClient(StartGameService, transport);
   const getGamesClient = createClient(GetGamesService, transport);
-  const [games, setGames] = useState<Game[]>([])
-  const [gameName, setGameName] = useState("")
+  const [games, setGames] = useState<GameProp[]>([]);
+  const [gameName, setGameName] = useState("");
 
   useEffect(() => {
     const fetchGames = async () => {
       const response = await getGamesClient.getGames({});
       setGames((prevGames) =>
-        response.games.map((newGame: Game) => {
+        response.games.map((newGame: GameProp) => {
           const old = prevGames.find((g) => g.id === newGame.id);
           return old && old.localStatus
             ? { ...newGame, localStatus: old.localStatus }
@@ -68,7 +67,7 @@ const Lobby: React.FC<LobbyProps> = ({
     };
     fetchGames();
   }, [getGamesClient, setGames]);
-  
+
   let gameList: React.ReactNode[] = [];
   if (gameStatus === "") {
     gameList = games.map((item) => (
@@ -149,14 +148,18 @@ const Lobby: React.FC<LobbyProps> = ({
 
   return (
     <WebSocketProvider value={ws}>
-      <div>
-        {/* ゲーム作成フォーム */}
-        {createGameForm}
+      {gameStatus === "STARTED" && player ? (
+        <Game message="" player={player} />
+      ) : (
+        <div>
+          {/* ゲーム作成フォーム */}
+          {createGameForm}
 
-        {/* ゲーム情報表示 */}
-        <div>Games</div>
-        <ul>{gameList}</ul>
-      </div>
+          {/* ゲーム情報表示 */}
+          <div>Games</div>
+          <ul>{gameList}</ul>
+        </div>
+      )}
     </WebSocketProvider>
   );
 };
