@@ -8,20 +8,26 @@ import {
   GetGamesService,
   StartGameService,
 } from "../gen/game/v1/game_pb";
-import type { Game as ProtoGame, Player } from "../gen/game/v1/game_pb";
-import Game from "./Game";
+import type { Game, Player } from "../gen/game/v1/game_pb";
+import GameComponent from "./Game";
 
-type GameProp = ProtoGame & {
-  localStatus?: string;
-};
 
 type LobbyProps = {};
 
 const Lobby: React.FC<LobbyProps> = ({}) => {
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const [startedGame, setStartedGame] = useState<GameProp | null>(null);
   const [gameStatus, setGameStatus] = useState("");
   const [player, setPlayer] = useState<Player>();
+  const [games, setGames] = useState<Game[]>([]);
+  const [gameName, setGameName] = useState("");
+
+    const transport = createConnectTransport({
+    baseUrl: "http://localhost:8080",
+  });
+  const createGameClient = createClient(CreateGameService, transport);
+  const joinGameServiceclient = createClient(JoinGameService, transport);
+  const startGameServiceclient = createClient(StartGameService, transport);
+  const getGamesClient = useMemo(() => createClient(GetGamesService, transport), [transport]);
 
   // player情報が揃ったらWebSocket接続
   useEffect(() => {
@@ -43,31 +49,16 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player]);
 
-  const transport = createConnectTransport({
-    baseUrl: "http://localhost:8080",
-  });
-  const createGameClient = createClient(CreateGameService, transport);
-  const joinGameServiceclient = createClient(JoinGameService, transport);
-  const startGameServiceclient = createClient(StartGameService, transport);
-  const getGamesClient = createClient(GetGamesService, transport);
-  const [games, setGames] = useState<GameProp[]>([]);
-  const [gameName, setGameName] = useState("");
-
+  // コンポーネント起動時にゲーム状態を取得
   useEffect(() => {
     const fetchGames = async () => {
       const response = await getGamesClient.getGames({});
-      setGames((prevGames) =>
-        response.games.map((newGame: GameProp) => {
-          const old = prevGames.find((g) => g.id === newGame.id);
-          return old && old.localStatus
-            ? { ...newGame, localStatus: old.localStatus }
-            : newGame;
-        })
-      );
+      setGames(response.games);
     };
     fetchGames();
   }, [getGamesClient, setGames]);
 
+  // ゲームリスト
   let gameList: React.ReactNode[] = [];
   if (gameStatus === "") {
     gameList = games.map((item) => (
@@ -80,14 +71,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               playerName: "unknown",
             });
             console.log(`Join the game ${response}`);
-            setGameStatus("JOINING");
-
-            setGames((prevGames) =>
-              prevGames.map((g) =>
-                g.id === item.id ? { ...g, localStatus: "JOINING" } : g
-              )
-            );
-
+            setGameStatus("JOINED");
             if (response.player) {
               setPlayer(response.player);
             }
@@ -97,9 +81,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
         </button>
       </li>
     ));
-  } else if (gameStatus === "JOINING") {
+  } else if (gameStatus === "CREATED") {
     gameList = games
-      .filter((item) => item.localStatus === "JOINING")
+      .filter((item) => item.status === "CREATED")
       .map((item) => (
         <li key={item.id}>
           Game id {item.id} is {item.status}
@@ -111,7 +95,6 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               });
               console.log(response);
               setGameStatus("STARTED");
-              setStartedGame(item);
             }}
           >
             開始
@@ -120,6 +103,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
       ));
   }
 
+  // ゲーム作成フォーム
   const createGameForm =
     gameStatus === "" ? (
       <form
@@ -136,19 +120,21 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             `created game is ${response.player?.gameId} player is ${response.player?.id}`
           );
 
-          setGameStatus("JOINING");
+          if (response.player === undefined ) return;
+          const p = response.player;
+          setPlayer(p)
 
-          setGames((prevGames) =>
-            prevGames.map((g) =>
-              g.id === response.player?.gameId
-                ? { ...g, localStatus: "JOINING" }
-                : g
-            )
-          );
+          setGames((prevGames) => [
+            ...prevGames,
+            {
+              id: p.gameId,
+              name: gameName,
+              status: "CREATED",
+              $typeName: "game.v1.Game"
+            }
+          ]);
 
-          if (response.player) {
-            setPlayer(response.player);
-          }
+          setGameStatus("CREATED");
         }}
       >
         <input
@@ -162,8 +148,12 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
   return (
     <WebSocketProvider value={ws}>
-      {gameStatus === "STARTED" && player ? (
-        <Game message="" player={player} />
+      {(gameStatus === "STARTED") || (gameStatus === "JOINED") && player ? (
+        <GameComponent
+            message=""
+            player={player}
+            status={gameStatus}
+        />
       ) : (
         <div>
           {/* ゲーム作成フォーム */}

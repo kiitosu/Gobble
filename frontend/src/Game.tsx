@@ -9,9 +9,10 @@ import React, { useEffect, useState } from "react";
 type GameProps = {
     message: string;
     player?: Player;
+    status?: string;
 };
 
-const Game = (props: GameProps) => {
+const GameComponent = (props: GameProps) => {
     const transport = createConnectTransport({
         baseUrl: "http://localhost:8080"
     });
@@ -57,7 +58,7 @@ const Game = (props: GameProps) => {
 
     return (
         <>
-            {cards.length > 0 && (
+            {props.status == "STARTED" && cards.length > 0 && (
                 <div>
                     <h3>受信カード一覧</h3>
                     {cards.map(card => (
@@ -67,17 +68,19 @@ const Game = (props: GameProps) => {
                     ))}
                 </div>
             )}
-            {props.player && (
+            {props.status == "STARTED" && props.player && (
                 <>
                     <button onClick={handleReadyClick}>
                         I'm READY!!!
                     </button>
-                    <button onClick={handleSubmitAnswer}>
-                        回答送信
-                    </button>
+                </>
+            )}
+            {props.status == "JOINED" && (
+                <>
+                    Waiting for game to start...
                 </>
             )}
         </>
     );
 };
-export default Game;
+export default GameComponent;
