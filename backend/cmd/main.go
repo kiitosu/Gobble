@@ -161,11 +161,10 @@ func (s *GameServer) CreateGame(
 	})
 
 	msg := map[string]interface{}{
-		"event": "STARTED",
+		"event": "CREATED",
 	}
 	b, _ := json.Marshal(msg)
-	broadcastToGame(game.ID, b)
-	log.Printf("message %v broadcasted on game created", msg)
+	broadcastToAll(b)
 
 	log.Printf("Game %s id of %d created by %s.", game_name, game.ID, player_name)
 	return res, nil
@@ -235,7 +234,6 @@ func (s *GameServer) StartGame(
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToGame(gamaIdInt, b)
-	log.Printf("message %v broadcasted on starting", msg)
 
 	res := connect.NewResponse(&gamev1.StartGameResponse{})
 
@@ -258,7 +256,6 @@ func DistributeCard(client *ent.Client, gameId int) {
 		}
 		cb, _ := json.Marshal(cardMsg)
 		broadcastToGame(gameId, cb)
-		log.Printf("message %v broadcasted on ready", cardMsg)
 
 		// カード送信後はPLAYINGとし、次のREADYを待ち受けられるようにする
 		_, err := client.Player.Update().
@@ -372,6 +369,8 @@ var upgrader = websocket.Upgrader{
 }
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
+	endLog := funcCallLog(logFuncName())
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Upgrade error:", err)
@@ -441,6 +440,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatalf("failed updating player status")
 		}
+		endLog()
 	}()
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte("Hello from service!!"))
@@ -456,23 +456,41 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Read error:", err)
 			break
 		}
-		log.Printf("Received: %s", message)
+		log.Printf("ws:Received: %s", message)
 	}
 }
 
 func broadcastToGame(gameID int, message []byte) {
+	log.Printf("broadcast to game")
 	conns, ok := gameClients[gameID]
 	if !ok {
+		log.Printf("gameClients err: %v", ok)
 		return
 	}
 	for conn := range conns {
 		err := conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
-			log.Printf("broadcast error: %v", err)
+			log.Printf("broadcast %s error: %v", message, err)
 			conn.Close()
 			delete(conns, conn)
 		} else {
-			log.Printf("broadcast success: %s", message)
+			log.Printf("broadcast %s　success: %+v", message, conns[conn])
+		}
+	}
+}
+
+func broadcastToAll(message []byte) {
+	log.Printf("broadcast to all %v", gameClients)
+	for _, conns := range gameClients {
+		for conn := range conns {
+			err := conn.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				log.Printf("broadcast error: %v", err)
+				conn.Close()
+				delete(conns, conn)
+			} else {
+				log.Printf("broadcast success: %s", message)
+			}
 		}
 	}
 }

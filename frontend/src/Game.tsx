@@ -39,7 +39,7 @@ const GameComponent = (props: GameProps) => {
 
     return (
         <>
-            {props.status == "STARTED" && props.cards && props.cards.length > 0 && (
+            {props.status == "STARTED" && (
                 <div>
                     <h3>受信カード一覧</h3>
                     {props.cards && props.cards.map((card, index) => (
@@ -47,15 +47,12 @@ const GameComponent = (props: GameProps) => {
                             カードID: {card.id} 内容: {card.text}
                         </div>
                     ))}
-                </div>
-            )}
-            {props.status == "STARTED" && props.player && props.started && (
-                <>
                     <button onClick={handleReadyClick}>
                         I'm READY!!!
                     </button>
-                </>
+                </div>
             )}
+
             {props.status == "JOINED" && (
                 <>
                     Waiting for game to start...

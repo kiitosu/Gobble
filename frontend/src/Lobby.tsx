@@ -47,16 +47,23 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
         );
       };
 
+      const updateGames = async () => {
+        const response = await getGamesClient.getGames({});
+        setGames(response.games);
+      };
+
       ws.current.onmessage = (e: MessageEvent) => {
         try {
           const msg = JSON.parse(e.data);
+          console.log("socket receive msg", msg);
+
+          if (msg.event === "CREATED") {
+            updateGames();
+          }
+
           if (msg.event === "STARTED" && !started) {
             setStarted(true);
-            const fetchGames = async () => {
-              const response = await getGamesClient.getGames({});
-              setGames(response.games);
-            };
-            fetchGames();
+            setGameStatus("STARTED")
           }
 
           if (msg.event === "card" && msg.card) {
@@ -64,7 +71,6 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             setCards((prev) => [...prev, msg.card]);
           }
 
-          console.log("socket receive msg", msg);
         } catch {
           // ignore parse error
         }
@@ -91,30 +97,34 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   // ゲームリスト
   let gameList: React.ReactNode[] = [];
   if (gameStatus === "") {
-    gameList = games.map((item) => (
-      <li key={item.id}>
-        Game id {item.id} is {item.status} status
-        <button
-          disabled={item.status !== "CREATED"}
-          onClick={async () => {
-            const response = await joinGameServiceclient.joinGame({
-              gameId: String(item.id),
-              playerName: "unknown",
-            });
-            console.log(`Join the game ${response}`);
-            setGameStatus("JOINED");
-            if (response.player) {
-              setPlayer(response.player);
-            }
-          }}
-        >
-          参加
-        </button>
-      </li>
-    ));
+    gameList = games
+      .filter((item) => item.status === "CREATED")
+      .sort((a, b) => b.id - a.id) // 降順ソートを追加
+      .map((item) => (
+        <li key={item.id}>
+          Game id {item.id} is {item.status} status
+          <button
+            disabled={item.status !== "CREATED"}
+            onClick={async () => {
+              const response = await joinGameServiceclient.joinGame({
+                gameId: String(item.id),
+                playerName: "unknown",
+              });
+              console.log(`Join the game ${response}`);
+              setGameStatus("JOINED");
+              if (response.player) {
+                setPlayer(response.player);
+              }
+            }}
+          >
+            参加
+          </button>
+        </li>
+      ));
   } else if (gameStatus === "CREATED") {
     gameList = games
       .filter((item) => item.status === "CREATED")
+      .sort((a, b) => b.id - a.id) // 降順ソートを追加
       .map((item) => (
         <li key={item.id}>
           Game id {item.id} is {item.status}
@@ -168,7 +178,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           setGameStatus("CREATED");
 
-          console.log("game status is CREATED")
+          console.log("game status is CREATED");
         }}
       >
         <input
