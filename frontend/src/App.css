@@ -4,3 +4,10 @@
   padding: 2rem;
   text-align: center;
 }
+
+.scrollable-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 8px;
+}

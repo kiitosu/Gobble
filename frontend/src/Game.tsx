@@ -3,13 +3,13 @@ import type { Player } from "../gen/game/v1/game_pb";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { ReportReadyService, SubmitAnswerService } from "../gen/game/v1/game_pb";
-import { useWebSocket } from "./WebSocketContext";
-import React, { useEffect, useState } from "react";
 
 type GameProps = {
     message: string;
+    started: boolean
     player?: Player;
     status?: string;
+    cards?: { id: number; text: string }[]
 };
 
 const GameComponent = (props: GameProps) => {
@@ -19,25 +19,6 @@ const GameComponent = (props: GameProps) => {
 
     const reportReadyServiceclient = createClient(ReportReadyService, transport);
     const submitAnswerServiceClient = createClient(SubmitAnswerService, transport);
-
-    const ws = useWebSocket();
-    const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
-
-    useEffect(() => {
-        if (!ws) return;
-        ws.onmessage = (e) => {
-            try {
-                const msg = JSON.parse(e.data);
-                if (msg.event === "card" && msg.card) {
-                    setCards(prev => [...prev, msg.card]);
-                }
-            } catch {
-                // ignore parse error
-            }
-        };
-        return () => { ws.onmessage = null; };
-    }, [ws]);
-
 
     const handleReadyClick = async () => {
         if (props.player) {
@@ -58,17 +39,17 @@ const GameComponent = (props: GameProps) => {
 
     return (
         <>
-            {props.status == "STARTED" && cards.length > 0 && (
+            {props.status == "STARTED" && props.cards && props.cards.length > 0 && (
                 <div>
                     <h3>受信カード一覧</h3>
-                    {cards.map(card => (
-                        <div key={card.id}>
+                    {props.cards && props.cards.map((card, index) => (
+                        <div key={`${card.id}-${index}`}>
                             カードID: {card.id} 内容: {card.text}
                         </div>
                     ))}
                 </div>
             )}
-            {props.status == "STARTED" && props.player && (
+            {props.status == "STARTED" && props.player && props.started && (
                 <>
                     <button onClick={handleReadyClick}>
                         I'm READY!!!

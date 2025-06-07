@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 
 	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -92,6 +93,8 @@ func (s *GameServer) CreateGame(
 	ctx context.Context,
 	req *connect.Request[gamev1.CreateGameRequest],
 ) (*connect.Response[gamev1.CreateGameResponse], error) {
+	log.Printf("CreateGame called %v", req)
+
 	client := GetDbClient(ctx)
 	defer client.Close()
 
@@ -153,7 +156,7 @@ func (s *GameServer) GetGames(
 	defer client.Close()
 
 	// データ取得
-	items, err := client.Game.Query().All(ctx)
+	items, err := client.Game.Query().Order(game.ByID(sql.OrderDesc())).All(ctx)
 	if err != nil {
 		log.Printf("failed querying games: %v", err)
 		return nil, err
@@ -198,8 +201,8 @@ func (s *GameServer) StartGame(
 	}
 
 	msg := map[string]interface{}{
-		"event":   "all_starting",
-		"game_id": game.ID,
+		"event":   "STARTED",
+		"game_id": gamaIdInt,
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToGame(gamaIdInt, b)
@@ -356,6 +359,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Invalid init message:", err)
 		return
 	}
+	log.Printf("initMsg %v", initMsg)
 
 	// gameClientsに登録
 	if gameClients[initMsg.GameID] == nil {
@@ -365,6 +369,17 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		GameID:   initMsg.GameID,
 		PlayerID: initMsg.PlayerID,
 	}
+
+	// クライアント接続直後にDEBUGイベントを送信（デバッグ用途）
+	debugEvent := map[string]interface{}{
+		"event": "DEBUG",
+		"state": "connected",
+	}
+	debugEventJSON, _ := json.Marshal(debugEvent)
+	broadcastToGame(initMsg.GameID, debugEventJSON)
+
+	log.Printf("gameClients %v", gameClients)
+
 	defer func() {
 		log.Printf("websocket disconnected execute defer func")
 		defer conn.Close()
@@ -418,8 +433,11 @@ func broadcastToGame(gameID int, message []byte) {
 	for conn := range conns {
 		err := conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
+			log.Printf("broadcast error: %v", err)
 			conn.Close()
 			delete(conns, conn)
+		} else {
+			log.Printf("broadcast success: %s", message)
 		}
 	}
 }

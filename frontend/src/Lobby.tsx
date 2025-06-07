@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { WebSocketProvider } from "./WebSocketContext";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
@@ -14,15 +14,21 @@ import GameComponent from "./Game";
 type LobbyProps = {};
 
 const Lobby: React.FC<LobbyProps> = ({}) => {
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const ws = useRef<WebSocket | null>(null);
   const [gameStatus, setGameStatus] = useState("");
   const [player, setPlayer] = useState<Player>();
   const [games, setGames] = useState<Game[]>([]);
   const [gameName, setGameName] = useState("");
+  const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
+  const [started, setStarted] = useState<boolean>(false);
 
-  const transport = createConnectTransport({
-    baseUrl: "http://localhost:8080",
-  });
+  const transport = useMemo(
+    () =>
+      createConnectTransport({
+        baseUrl: "http://localhost:8080",
+      }),
+    []
+  );
   const createGameClient = createClient(CreateGameService, transport);
   const joinGameServiceclient = createClient(JoinGameService, transport);
   const startGameServiceclient = createClient(StartGameService, transport);
@@ -33,25 +39,32 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
   // player情報が揃ったらWebSocket接続
   useEffect(() => {
-    if (player && player.gameId && player.id && !ws) {
-      const socket = new WebSocket("ws://localhost:8080/ws");
-      socket.onopen = () => {
-        socket.send(
+    if (player && player.gameId && player.id && !ws.current) {
+      ws.current = new WebSocket("ws://localhost:8080/ws");
+      ws.current.onopen = () => {
+        ws.current?.send(
           JSON.stringify({ game_id: player.gameId, player_id: player.id })
         );
       };
-      setWs(socket);
 
-      socket.onmessage = (e) => {
+      ws.current.onmessage = (e: MessageEvent) => {
         try {
           const msg = JSON.parse(e.data);
-          if (msg.event === "STARTED") {
+          if (msg.event === "STARTED" && !started) {
+            setStarted(true);
             const fetchGames = async () => {
               const response = await getGamesClient.getGames({});
               setGames(response.games);
             };
             fetchGames();
           }
+
+          if (msg.event === "card" && msg.card) {
+            console.log("Received card:", msg.card);
+            setCards((prev) => [...prev, msg.card]);
+          }
+
+          console.log("socket receive msg", msg);
         } catch {
           // ignore parse error
         }
@@ -59,8 +72,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
     }
     // クリーンアップ: Lobbyアンマウント時にWebSocket切断
     return () => {
-      if (ws) {
-        ws.close();
+      if (ws.current) {
+        ws.current.close();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,6 +95,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
       <li key={item.id}>
         Game id {item.id} is {item.status} status
         <button
+          disabled={item.status !== "CREATED"}
           onClick={async () => {
             const response = await joinGameServiceclient.joinGame({
               gameId: String(item.id),
@@ -126,6 +140,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          // ゲーム作成
           const response = await createGameClient.createGame({
             gameName: gameName,
             playerName: gameName,
@@ -152,6 +167,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           ]);
 
           setGameStatus("CREATED");
+
+          console.log("game status is CREATED")
         }}
       >
         <input
@@ -164,9 +181,15 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
     ) : null;
 
   return (
-    <WebSocketProvider value={ws}>
+    <>
       {gameStatus === "STARTED" || (gameStatus === "JOINED" && player) ? (
-        <GameComponent message="" player={player} status={gameStatus} />
+        <GameComponent
+          message=""
+          started={started}
+          player={player}
+          status={gameStatus}
+          cards={cards}
+        />
       ) : (
         <div>
           {/* ゲーム作成フォーム */}
@@ -174,10 +197,12 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           {/* ゲーム情報表示 */}
           <div>Games</div>
-          <ul>{gameList}</ul>
+          <div className="scrollable-list">
+            <ul>{gameList}</ul>
+          </div>
         </div>
       )}
-    </WebSocketProvider>
+    </>
   );
 };
 
