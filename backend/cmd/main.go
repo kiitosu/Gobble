@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -53,10 +54,32 @@ func GetDbClient(
 /* servers */
 type GameServer struct{}
 
+func logFuncName() string {
+	pc, _, _, ok := runtime.Caller(1)
+	if !ok {
+		return "unknown"
+	}
+	return runtime.FuncForPC(pc).Name()
+}
+
+func funcCallLog(funcName string) func() {
+	log.Printf("________")
+	log.Printf("START: %s", funcName)
+
+	endLog := func() {
+		log.Printf("END: %s", funcName)
+		log.Printf("^^^^^^^^ ")
+	}
+	return endLog
+}
+
 func (s *GameServer) JoinGame(
 	ctx context.Context,
 	req *connect.Request[gamev1.JoinGameRequest],
 ) (*connect.Response[gamev1.JoinGameResponse], error) {
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
+
 	client := GetDbClient(ctx)
 	defer client.Close()
 
@@ -93,7 +116,8 @@ func (s *GameServer) CreateGame(
 	ctx context.Context,
 	req *connect.Request[gamev1.CreateGameRequest],
 ) (*connect.Response[gamev1.CreateGameResponse], error) {
-	log.Printf("CreateGame called %v", req)
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
 
 	client := GetDbClient(ctx)
 	defer client.Close()
@@ -151,6 +175,8 @@ func (s *GameServer) GetGames(
 	ctx context.Context,
 	req *connect.Request[gamev1.GetGamesRequest],
 ) (*connect.Response[gamev1.GetGamesResponse], error) {
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
 
 	client := GetDbClient(ctx)
 	defer client.Close()
@@ -179,6 +205,9 @@ func (s *GameServer) StartGame(
 	ctx context.Context,
 	req *connect.Request[gamev1.StartGameRequest],
 ) (*connect.Response[gamev1.StartGameResponse], error) {
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
+
 	client := GetDbClient(ctx)
 	defer client.Close()
 
@@ -246,6 +275,9 @@ func (s *GameServer) ReportReady(
 	ctx context.Context,
 	req *connect.Request[gamev1.ReportReadyRequest],
 ) (*connect.Response[gamev1.ReportReadyResponse], error) {
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
+
 	client := GetDbClient(ctx)
 	defer client.Close()
 
@@ -298,6 +330,9 @@ func (s *GameServer) SubmitAnswer(
 	ctx context.Context,
 	req *connect.Request[gamev1.SubmitAnswerRequest],
 ) (*connect.Response[gamev1.SubmitAnswerResponse], error) {
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
+
 	message := "correct!!!"
 
 	// player_idからgame_idを特定し、そのゲームのクライアントにbroadcast
