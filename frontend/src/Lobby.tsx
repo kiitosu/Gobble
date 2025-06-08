@@ -14,7 +14,7 @@ type LobbyProps = {};
 
 export const DEAL_A_CARD = "新しいカードを要求する";
 export const WAIT_FOR_OTHER_PLAYERS = "他のユーザのカード要求を待っています";
-export const NEED_ANSWER = "回答してください"
+export const NEED_ANSWER = "回答してください";
 
 const Lobby: React.FC<LobbyProps> = ({}) => {
   const [dealACard, setDealACard] = useState<string>(DEAL_A_CARD);
@@ -25,8 +25,16 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [gameName, setGameName] = useState("");
   const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
   const [started, setStarted] = useState<boolean>(false);
-  const [answer, setAnswer] = useState<{ playerId: number; isCorrect: boolean; answer: string; userAnswer: string }>();
-  const [scores, setScores] = useState<{ player_id: number; score: number }[]>([]);
+  const [answer, setAnswer] = useState<{
+    playerId: number;
+    isCorrect: boolean;
+    answer: string;
+    userAnswer: string;
+  }>();
+  const [scores, setScores] = useState<{ player_id: number; score: number }[]>(
+    []
+  );
+  const [gameOver, setGameOver] = useState<boolean>(false);
 
   const transport = useMemo(
     () =>
@@ -69,12 +77,17 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           if (msg.event === "STARTED" && !started) {
             setStarted(true);
-            setGameStatus("STARTED")
+            setGameStatus("STARTED");
           }
 
           if (msg.event === "ANSWERED") {
             console.log("ANSWERED msg", msg);
-            setAnswer({ playerId: Number(msg.player_id), isCorrect: msg.is_correct, answer: msg.correct_symbol ?? "", userAnswer: String(msg.answer ?? "") });
+            setAnswer({
+              playerId: Number(msg.player_id),
+              isCorrect: msg.is_correct,
+              answer: msg.correct_symbol ?? "",
+              userAnswer: String(msg.answer ?? ""),
+            });
             setDealACard(DEAL_A_CARD);
             if (msg.scores) {
               setScores(msg.scores);
@@ -97,10 +110,12 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           }
 
           if (msg.event === "JOINED") {
-            setGameStatus("READY")
+            setGameStatus("READY");
           }
 
-
+          if (msg.event === "GAME_OVER") {
+            setGameOver(true);
+          }
         } catch {
           // ignore parse error
         }
@@ -149,7 +164,11 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           </button>
         </li>
       ));
-  } else if (gameStatus === "CREATED" || gameStatus === "JOINED" || gameStatus === "READY") {
+  } else if (
+    gameStatus === "CREATED" ||
+    gameStatus === "JOINED" ||
+    gameStatus === "READY"
+  ) {
     gameList = games
       .filter((item) => item.status === "CREATED")
       .sort((a, b) => b.id - a.id) // 降順ソートを追加
@@ -165,7 +184,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               console.log(response);
               setGameStatus("STARTED");
             }}
-            disabled = {gameStatus !== "READY"}
+            disabled={gameStatus !== "READY"}
           >
             開始
           </button>
@@ -222,17 +241,42 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   return (
     <>
       {gameStatus === "STARTED" || (gameStatus === "JOINED" && player) ? (
-        <GameComponent
-          message=""
-          started={started}
-          player={player}
-          status={gameStatus}
-          cards={cards}
-          answer={answer}
-          dealACard={dealACard}
-          setDealACard={setDealACard}
-          scores={scores}
-        />
+        gameOver ? (
+          <div
+            style={{
+              fontWeight: "bold",
+              fontSize: "1.5em",
+              color: "#1976d2",
+              textAlign: "center",
+            }}
+          >
+            ゲーム終了！
+            <br />
+            {scores.sort((a, b) => b.score - a.score)[0].player_id ===
+            player?.id
+              ? "あなたの勝ちです！"
+              : "あなたの負けです！"}
+            <div style={{ marginTop: "16px", textAlign: "center" }}>
+              {scores.map((score) => (
+                <div key={score.player_id}>
+                  {score.player_id === player?.id ? "あなた" : `プレイヤー ${score.player_id}`}: {score.score}点
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <GameComponent
+            message=""
+            started={started}
+            player={player}
+            status={gameStatus}
+            cards={cards}
+            answer={answer}
+            dealACard={dealACard}
+            setDealACard={setDealACard}
+            scores={scores}
+          />
+        )
       ) : (
         <div>
           {/* ゲーム作成フォーム */}
@@ -240,9 +284,11 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           {/* ゲーム情報表示 */}
           <div>Games</div>
-          {
-            gameStatus === "CREATED" ? <div>please wait for a player...</div> : <div>please reload to get the games...</div>
-          }
+          {gameStatus === "CREATED" ? (
+            <div>please wait for a player...</div>
+          ) : (
+            <div>please reload to get the games...</div>
+          )}
           <div className="scrollable-list">
             <ul>{gameList}</ul>
           </div>

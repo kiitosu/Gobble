@@ -144,7 +144,7 @@ func (s *GameServer) CreateGame(
 	}
 
 	// Dobbleカード生成
-	cards, _, err := cardgen.GenerateDobbleCards(3)
+	cards, _, err := cardgen.GenerateDobbleCards(2)
 	if err != nil {
 		log.Printf("failed to generate dobble cards: %v", err)
 	} else {
@@ -254,6 +254,16 @@ func (s *GameServer) StartGame(
 func DistributeCard(client *ent.Client, gameId int) {
 	cards := unsentCards[gameId]
 	log.Printf("%d cards remaining with game id %d", len(cards), gameId)
+	if len(cards) == 0 {
+		// カードが無くなったらゲーム終了イベントを送信
+		endMsg := map[string]interface{}{
+			"event": "GAME_OVER",
+		}
+		b, _ := json.Marshal(endMsg)
+		broadcastToGame(gameId, b)
+		return
+	}
+
 	if len(cards) > 0 {
 		card := cards[0]
 		unsentCards[gameId] = cards[1:]
