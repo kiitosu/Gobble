@@ -15,6 +15,7 @@ type GameProps = {
   player?: Player;
   status?: string;
   cards?: Card[];
+  answer?: { playerId: number; isCorrect: boolean };
 };
 
 const GameComponent = (props: GameProps) => {
@@ -62,8 +63,20 @@ const GameComponent = (props: GameProps) => {
   return (
     <>
       {/* ゲーム開催中 */}
-      {props.status == "STARTED" && (
+      {props.status === "STARTED" && (
         <div>
+          <div>
+            {props.answer && props.player && (
+              <>
+                {props.answer.playerId === props.player.id
+                  ? `You are ${props.answer.isCorrect ? "correct" : "wrong"}!`
+                  : `Player ${props.player.id} ${
+                      props.answer.isCorrect ? "correct" : "wrong"
+                    }!`}
+              </>
+            )}
+          </div>
+
           <button onClick={handleReadyClick}>I'm READY!!!</button>
 
           <h3>受信カード一覧</h3>
@@ -78,11 +91,13 @@ const GameComponent = (props: GameProps) => {
                   <div>
                     {extractSymbol(card.text).map((symbol, idx) => (
                       <button
-                        onClick={()=>handleSubmitAnswer(
-                          props.cards![props.cards!.length - 1],
-                          props.cards![props.cards!.length - 2],
-                          symbol
-                        )}
+                        onClick={() =>
+                          handleSubmitAnswer(
+                            props.cards![props.cards!.length - 1],
+                            props.cards![props.cards!.length - 2],
+                            symbol
+                          )
+                        }
                         key={`${card.id}-symbol-${idx}`}
                         disabled={index !== 0} // 最新のカード（indexが0）のみ有効
                       >

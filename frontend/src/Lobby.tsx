@@ -20,6 +20,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [gameName, setGameName] = useState("");
   const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
   const [started, setStarted] = useState<boolean>(false);
+  const [answer, setAnswer] = useState<{ playerId: number; isCorrect: boolean }>();
+
 
   const transport = useMemo(
     () =>
@@ -65,10 +67,18 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             setGameStatus("STARTED")
           }
 
+          if (msg.event === "ANSWERED") {
+            setAnswer({ playerId: Number(msg.player_id), isCorrect: msg.is_correct })
+            console.log(answer)
+            console.log("hogehoge")
+          }
+
           if (msg.event === "card" && msg.card) {
             console.log("Received card:", msg.card);
             setCards((prev) => [...prev, msg.card]);
           }
+
+
 
         } catch {
           // ignore parse error
@@ -196,6 +206,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           player={player}
           status={gameStatus}
           cards={cards}
+          answer={answer}
         />
       ) : (
         <div>

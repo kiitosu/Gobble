@@ -398,7 +398,13 @@ func (s *GameServer) SubmitAnswer(
 			if err != nil {
 				log.Printf("failed to query parent game: %v", err)
 			} else {
-				broadcastToGame(gameEnt.ID, []byte(message))
+				msg := map[string]interface{}{
+					"event":      "ANSWERED",
+					"player_id":  playerID,
+					"is_correct": isCorrect,
+				}
+				b, _ := json.Marshal(msg)
+				broadcastToGame(gameEnt.ID, b)
 			}
 		}
 	}
