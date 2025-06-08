@@ -12,7 +12,12 @@ import GameComponent from "./Game";
 
 type LobbyProps = {};
 
+export const DEAL_A_CARD = "新しいカードを要求する";
+export const WAIT_FOR_OTHER_PLAYERS = "他のユーザのカード要求を待っています";
+export const NEED_ANSWER = "回答してください"
+
 const Lobby: React.FC<LobbyProps> = ({}) => {
+  const [dealACard, setDealACard] = useState<string>(DEAL_A_CARD);
   const ws = useRef<WebSocket | null>(null);
   const [gameStatus, setGameStatus] = useState("");
   const [player, setPlayer] = useState<Player>();
@@ -21,7 +26,6 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
   const [started, setStarted] = useState<boolean>(false);
   const [answer, setAnswer] = useState<{ playerId: number; isCorrect: boolean }>();
-
 
   const transport = useMemo(
     () =>
@@ -69,13 +73,22 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           if (msg.event === "ANSWERED") {
             setAnswer({ playerId: Number(msg.player_id), isCorrect: msg.is_correct })
+            setDealACard(DEAL_A_CARD)
             console.log(answer)
             console.log("hogehoge")
           }
 
           if (msg.event === "card" && msg.card) {
             console.log("Received card:", msg.card);
-            setCards((prev) => [...prev, msg.card]);
+            setCards((prev) => {
+              const next = [...prev, msg.card];
+              if (next.length < 2) {
+                setDealACard(DEAL_A_CARD);
+              } else {
+                setDealACard(NEED_ANSWER);
+              }
+              return next;
+            });
           }
 
           if (msg.event === "JOINED") {
@@ -211,6 +224,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           status={gameStatus}
           cards={cards}
           answer={answer}
+          dealACard={dealACard}
+          setDealACard={setDealACard}
         />
       ) : (
         <div>
