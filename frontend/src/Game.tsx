@@ -266,7 +266,7 @@ const GameComponent = (props: GameProps) => {
                   <div>
                     カードID: {card.id} 内容: {card.text}
                   </div>
-                  {props.cards && props.cards.length >= 2 && (
+                  {props.cards && props.cards.length >= 1 && (
                     <div>
                       {extractSymbol(card.text).map((symbol, idx) => (
                         <button
@@ -279,8 +279,8 @@ const GameComponent = (props: GameProps) => {
                           }
                           key={`${card.id}-symbol-${idx}`}
                           disabled={
-                            props.dealACard !== NEED_ANSWER || index !== 0
-                          } // 最新のカード（indexが0）のみ有効
+                            index === 1 || props.dealACard !== NEED_ANSWER || index > 1
+                          } // 最新のカード（indexが0）のみ有効、1枚目のカード（indexが1）は常にdisabled
                         >
                           {symbol}
                         </button>
