@@ -29,6 +29,8 @@ type GameProps = {
 
 import React, { useState, useEffect } from "react";
 
+import seedrandom from "seedrandom";
+
 const GameComponent = (props: GameProps) => {
   const [showDialog, setShowDialog] = useState(false);
 
@@ -99,6 +101,108 @@ const GameComponent = (props: GameProps) => {
   };
   // 表示用にアイコンへ変換
   const toIcon = (num: string) => iconMap[num] || num;
+
+  // カード内のシンボルをランダム配置するためのコンポーネント
+  const SymbolRandomLayout = ({ symbols, cardId }: { symbols: string[]; cardId: number }) => {
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+    useEffect(() => {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    }, []);
+
+    // ゲーム番号とカード番号をシードにしたPRNGを作成
+    const rng = React.useMemo(() => {
+      // ゲーム番号を文字列として受け取る想定。なければ固定値
+      const seed = (props.message || "default_seed") + "_" + cardId.toString();
+      return seedrandom(seed);
+    }, [props.message, cardId]);
+
+    // シンボルのランダムな位置を計算（重ならないように）
+    const symbolSize = 40; // シンボルの表示サイズ（px）
+    const positions = React.useMemo(() => {
+      const posArray: { top: number; left: number }[] = [];
+      const maxTop = containerSize.height - symbolSize;
+      const maxLeft = containerSize.width - symbolSize;
+
+      const isOverlap = (x1: number, y1: number, x2: number, y2: number) => {
+        const distance = Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+        return distance < symbolSize;
+      };
+
+      for (let i = 0; i < symbols.length; i++) {
+        let top: number, left: number;
+        let attempts = 0;
+        do {
+          top = Math.floor(rng() * (maxTop > 0 ? maxTop : 0));
+          left = Math.floor(rng() * (maxLeft > 0 ? maxLeft : 0));
+          attempts++;
+          // 10回試しても重ならなければ強制的に配置
+          if (attempts > 10) break;
+        } while (
+          posArray.some((pos) => isOverlap(pos.left, pos.top, left, top))
+        );
+        posArray.push({ top, left });
+      }
+      return posArray;
+    }, [symbols, containerSize, rng]);
+
+    return (
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "80px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          backgroundColor: "#fff",
+          marginTop: "8px",
+        }}
+      >
+        {symbols.map((num, idx) => (
+          <button
+            key={idx}
+            style={{
+              position: "absolute",
+              top: positions[idx]?.top ?? 0,
+              left: positions[idx]?.left ?? 0,
+              width: symbolSize,
+              height: symbolSize,
+              borderRadius: "50%",
+              border: "1px solid #1976d2",
+              backgroundColor: "#1976d2",
+              color: "white",
+              fontSize: "1.5em",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+            onClick={() =>
+              handleSubmitAnswer(
+                props.cards![props.cards!.length - 1],
+                props.cards![props.cards!.length - 2],
+                num
+              )
+            }
+            disabled={
+              props.dealACard !== NEED_ANSWER
+            }
+            aria-label={`シンボル ${toIcon(num)}`}
+          >
+            {toIcon(num)}
+          </button>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -292,54 +396,25 @@ const GameComponent = (props: GameProps) => {
               alignItems: "center",
             }}
           >
-            {props.cards &&
-              [...props.cards].reverse().map((card, index) => (
-                <div
-                  key={`${card.id}-${index}`}
-                  style={{
-                    marginBottom: "16px",
-                    border: "2px solid gray",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    width: `${extractSymbolNumbers(card.text).length * 60}px`,
-                  }}
-                >
-                  {/* <div>
-                    カードID: {card.id} 内容: {card.text}
-                  </div> */}
-
-                  {props.cards && props.cards.length >= 1 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        flexWrap: "wrap",
-                        justifyContent: "space-around",
-                      }}
-                    >
-                      {extractSymbolNumbers(card.text).map((num, idx) => (
-                        <button
-                          onClick={() =>
-                            handleSubmitAnswer(
-                              props.cards![props.cards!.length - 1],
-                              props.cards![props.cards!.length - 2],
-                              num
-                            )
-                          }
-                          key={`${card.id}-symbol-${idx}`}
-                          disabled={
-                            index === 1 ||
-                            props.dealACard !== NEED_ANSWER ||
-                            index > 1
-                          } // 最新のカード（indexが0）のみ有効、1枚目のカード（indexが1）は常にdisabled
-                        >
-                          {toIcon(num)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {props.cards &&
+              [...props.cards].reverse().map((card) => {
+                const symbolNums = extractSymbolNumbers(card.text);
+                return (
+                  <div
+                    key={card.id}
+                    style={{
+                      marginBottom: "16px",
+                      border: "2px solid gray",
+                      borderRadius: "8px",
+                      padding: "12px",
+                      width: `${symbolNums.length * 60}px`,
+                      backgroundColor: "white",
+                    }}
+                  >
+                    <SymbolRandomLayout symbols={symbolNums} cardId={card.id} />
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
