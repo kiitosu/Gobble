@@ -46,6 +46,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"JOINING", "STARTED", "READY", "PLAYING", "FINISHED"}, Default: "JOINING"},
+		{Name: "score", Type: field.TypeInt, Default: 0},
 		{Name: "player_parent", Type: field.TypeInt, Nullable: true},
 	}
 	// PlayersTable holds the schema information for the "players" table.
@@ -56,7 +57,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "players_games_parent",
-				Columns:    []*schema.Column{PlayersColumns[3]},
+				Columns:    []*schema.Column{PlayersColumns[4]},
 				RefColumns: []*schema.Column{GamesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

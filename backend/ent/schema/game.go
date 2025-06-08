@@ -46,6 +46,8 @@ func (Player) Fields() []ent.Field {
 		field.Enum("status").
 			Values("JOINING", "STARTED", "READY", "PLAYING", "FINISHED").
 			Default("JOINING"),
+		field.Int("score").
+			Default(0),
 	}
 }
 

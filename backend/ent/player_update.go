@@ -56,6 +56,27 @@ func (pu *PlayerUpdate) SetNillableStatus(pl *player.Status) *PlayerUpdate {
 	return pu
 }
 
+// SetScore sets the "score" field.
+func (pu *PlayerUpdate) SetScore(i int) *PlayerUpdate {
+	pu.mutation.ResetScore()
+	pu.mutation.SetScore(i)
+	return pu
+}
+
+// SetNillableScore sets the "score" field if the given value is not nil.
+func (pu *PlayerUpdate) SetNillableScore(i *int) *PlayerUpdate {
+	if i != nil {
+		pu.SetScore(*i)
+	}
+	return pu
+}
+
+// AddScore adds i to the "score" field.
+func (pu *PlayerUpdate) AddScore(i int) *PlayerUpdate {
+	pu.mutation.AddScore(i)
+	return pu
+}
+
 // SetParentID sets the "parent" edge to the Game entity by ID.
 func (pu *PlayerUpdate) SetParentID(id int) *PlayerUpdate {
 	pu.mutation.SetParentID(id)
@@ -146,6 +167,12 @@ func (pu *PlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.Status(); ok {
 		_spec.SetField(player.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := pu.mutation.Score(); ok {
+		_spec.SetField(player.FieldScore, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.AddedScore(); ok {
+		_spec.AddField(player.FieldScore, field.TypeInt, value)
+	}
 	if pu.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -220,6 +247,27 @@ func (puo *PlayerUpdateOne) SetNillableStatus(pl *player.Status) *PlayerUpdateOn
 	if pl != nil {
 		puo.SetStatus(*pl)
 	}
+	return puo
+}
+
+// SetScore sets the "score" field.
+func (puo *PlayerUpdateOne) SetScore(i int) *PlayerUpdateOne {
+	puo.mutation.ResetScore()
+	puo.mutation.SetScore(i)
+	return puo
+}
+
+// SetNillableScore sets the "score" field if the given value is not nil.
+func (puo *PlayerUpdateOne) SetNillableScore(i *int) *PlayerUpdateOne {
+	if i != nil {
+		puo.SetScore(*i)
+	}
+	return puo
+}
+
+// AddScore adds i to the "score" field.
+func (puo *PlayerUpdateOne) AddScore(i int) *PlayerUpdateOne {
+	puo.mutation.AddScore(i)
 	return puo
 }
 
@@ -342,6 +390,12 @@ func (puo *PlayerUpdateOne) sqlSave(ctx context.Context) (_node *Player, err err
 	}
 	if value, ok := puo.mutation.Status(); ok {
 		_spec.SetField(player.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := puo.mutation.Score(); ok {
+		_spec.SetField(player.FieldScore, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.AddedScore(); ok {
+		_spec.AddField(player.FieldScore, field.TypeInt, value)
 	}
 	if puo.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -40,6 +40,20 @@ func (pc *PlayerCreate) SetNillableStatus(pl *player.Status) *PlayerCreate {
 	return pc
 }
 
+// SetScore sets the "score" field.
+func (pc *PlayerCreate) SetScore(i int) *PlayerCreate {
+	pc.mutation.SetScore(i)
+	return pc
+}
+
+// SetNillableScore sets the "score" field if the given value is not nil.
+func (pc *PlayerCreate) SetNillableScore(i *int) *PlayerCreate {
+	if i != nil {
+		pc.SetScore(*i)
+	}
+	return pc
+}
+
 // SetParentID sets the "parent" edge to the Game entity by ID.
 func (pc *PlayerCreate) SetParentID(id int) *PlayerCreate {
 	pc.mutation.SetParentID(id)
@@ -98,6 +112,10 @@ func (pc *PlayerCreate) defaults() {
 		v := player.DefaultStatus
 		pc.mutation.SetStatus(v)
 	}
+	if _, ok := pc.mutation.Score(); !ok {
+		v := player.DefaultScore
+		pc.mutation.SetScore(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -117,6 +135,9 @@ func (pc *PlayerCreate) check() error {
 		if err := player.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Player.status": %w`, err)}
 		}
+	}
+	if _, ok := pc.mutation.Score(); !ok {
+		return &ValidationError{Name: "score", err: errors.New(`ent: missing required field "Player.score"`)}
 	}
 	return nil
 }
@@ -151,6 +172,10 @@ func (pc *PlayerCreate) createSpec() (*Player, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.Status(); ok {
 		_spec.SetField(player.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := pc.mutation.Score(); ok {
+		_spec.SetField(player.FieldScore, field.TypeInt, value)
+		_node.Score = value
 	}
 	if nodes := pc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -71,6 +71,12 @@ const GameComponent = (props: GameProps) => {
       {/* ゲーム開催中 */}
       {props.status === "STARTED" && (
         <div>
+          {/* スコア表示 */}
+          {props.player && (
+            <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+              スコア: {props.player.score}
+            </div>
+          )}
           <div>
             {props.answer && props.player && (
               <>

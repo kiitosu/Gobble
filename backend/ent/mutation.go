@@ -1289,6 +1289,8 @@ type PlayerMutation struct {
 	id            *int
 	name          *string
 	status        *player.Status
+	score         *int
+	addscore      *int
 	clearedFields map[string]struct{}
 	parent        *int
 	clearedparent bool
@@ -1467,6 +1469,62 @@ func (m *PlayerMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetScore sets the "score" field.
+func (m *PlayerMutation) SetScore(i int) {
+	m.score = &i
+	m.addscore = nil
+}
+
+// Score returns the value of the "score" field in the mutation.
+func (m *PlayerMutation) Score() (r int, exists bool) {
+	v := m.score
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScore returns the old "score" field's value of the Player entity.
+// If the Player object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlayerMutation) OldScore(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScore is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScore requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScore: %w", err)
+	}
+	return oldValue.Score, nil
+}
+
+// AddScore adds i to the "score" field.
+func (m *PlayerMutation) AddScore(i int) {
+	if m.addscore != nil {
+		*m.addscore += i
+	} else {
+		m.addscore = &i
+	}
+}
+
+// AddedScore returns the value that was added to the "score" field in this mutation.
+func (m *PlayerMutation) AddedScore() (r int, exists bool) {
+	v := m.addscore
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetScore resets all changes to the "score" field.
+func (m *PlayerMutation) ResetScore() {
+	m.score = nil
+	m.addscore = nil
+}
+
 // SetParentID sets the "parent" edge to the Game entity by id.
 func (m *PlayerMutation) SetParentID(id int) {
 	m.parent = &id
@@ -1540,12 +1598,15 @@ func (m *PlayerMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PlayerMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, player.FieldName)
 	}
 	if m.status != nil {
 		fields = append(fields, player.FieldStatus)
+	}
+	if m.score != nil {
+		fields = append(fields, player.FieldScore)
 	}
 	return fields
 }
@@ -1559,6 +1620,8 @@ func (m *PlayerMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case player.FieldStatus:
 		return m.Status()
+	case player.FieldScore:
+		return m.Score()
 	}
 	return nil, false
 }
@@ -1572,6 +1635,8 @@ func (m *PlayerMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldName(ctx)
 	case player.FieldStatus:
 		return m.OldStatus(ctx)
+	case player.FieldScore:
+		return m.OldScore(ctx)
 	}
 	return nil, fmt.Errorf("unknown Player field %s", name)
 }
@@ -1595,6 +1660,13 @@ func (m *PlayerMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
+	case player.FieldScore:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScore(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Player field %s", name)
 }
@@ -1602,13 +1674,21 @@ func (m *PlayerMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *PlayerMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addscore != nil {
+		fields = append(fields, player.FieldScore)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *PlayerMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case player.FieldScore:
+		return m.AddedScore()
+	}
 	return nil, false
 }
 
@@ -1617,6 +1697,13 @@ func (m *PlayerMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *PlayerMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case player.FieldScore:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddScore(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Player numeric field %s", name)
 }
@@ -1649,6 +1736,9 @@ func (m *PlayerMutation) ResetField(name string) error {
 		return nil
 	case player.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case player.FieldScore:
+		m.ResetScore()
 		return nil
 	}
 	return fmt.Errorf("unknown Player field %s", name)

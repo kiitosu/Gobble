@@ -24,4 +24,8 @@ func init() {
 	playerDescName := playerFields[0].Descriptor()
 	// player.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	player.NameValidator = playerDescName.Validators[0].(func(string) error)
+	// playerDescScore is the schema descriptor for score field.
+	playerDescScore := playerFields[2].Descriptor()
+	// player.DefaultScore holds the default value on creation for the score field.
+	player.DefaultScore = playerDescScore.Default.(int)
 }

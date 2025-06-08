@@ -21,6 +21,8 @@ type Player struct {
 	Name string `json:"name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status player.Status `json:"status,omitempty"`
+	// Score holds the value of the "score" field.
+	Score int `json:"score,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlayerQuery when eager-loading is set.
 	Edges         PlayerEdges `json:"edges"`
@@ -53,7 +55,7 @@ func (*Player) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case player.FieldID:
+		case player.FieldID, player.FieldScore:
 			values[i] = new(sql.NullInt64)
 		case player.FieldName, player.FieldStatus:
 			values[i] = new(sql.NullString)
@@ -91,6 +93,12 @@ func (pl *Player) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				pl.Status = player.Status(value.String)
+			}
+		case player.FieldScore:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field score", values[i])
+			} else if value.Valid {
+				pl.Score = int(value.Int64)
 			}
 		case player.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -145,6 +153,9 @@ func (pl *Player) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", pl.Status))
+	builder.WriteString(", ")
+	builder.WriteString("score=")
+	builder.WriteString(fmt.Sprintf("%v", pl.Score))
 	builder.WriteByte(')')
 	return builder.String()
 }

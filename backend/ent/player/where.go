@@ -59,6 +59,11 @@ func Name(v string) predicate.Player {
 	return predicate.Player(sql.FieldEQ(FieldName, v))
 }
 
+// Score applies equality check predicate on the "score" field. It's identical to ScoreEQ.
+func Score(v int) predicate.Player {
+	return predicate.Player(sql.FieldEQ(FieldScore, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Player {
 	return predicate.Player(sql.FieldEQ(FieldName, v))
@@ -142,6 +147,46 @@ func StatusIn(vs ...Status) predicate.Player {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.Player {
 	return predicate.Player(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// ScoreEQ applies the EQ predicate on the "score" field.
+func ScoreEQ(v int) predicate.Player {
+	return predicate.Player(sql.FieldEQ(FieldScore, v))
+}
+
+// ScoreNEQ applies the NEQ predicate on the "score" field.
+func ScoreNEQ(v int) predicate.Player {
+	return predicate.Player(sql.FieldNEQ(FieldScore, v))
+}
+
+// ScoreIn applies the In predicate on the "score" field.
+func ScoreIn(vs ...int) predicate.Player {
+	return predicate.Player(sql.FieldIn(FieldScore, vs...))
+}
+
+// ScoreNotIn applies the NotIn predicate on the "score" field.
+func ScoreNotIn(vs ...int) predicate.Player {
+	return predicate.Player(sql.FieldNotIn(FieldScore, vs...))
+}
+
+// ScoreGT applies the GT predicate on the "score" field.
+func ScoreGT(v int) predicate.Player {
+	return predicate.Player(sql.FieldGT(FieldScore, v))
+}
+
+// ScoreGTE applies the GTE predicate on the "score" field.
+func ScoreGTE(v int) predicate.Player {
+	return predicate.Player(sql.FieldGTE(FieldScore, v))
+}
+
+// ScoreLT applies the LT predicate on the "score" field.
+func ScoreLT(v int) predicate.Player {
+	return predicate.Player(sql.FieldLT(FieldScore, v))
+}
+
+// ScoreLTE applies the LTE predicate on the "score" field.
+func ScoreLTE(v int) predicate.Player {
+	return predicate.Player(sql.FieldLTE(FieldScore, v))
 }
 
 // HasParent applies the HasEdge predicate on the "parent" edge.

@@ -105,6 +105,7 @@ func (s *GameServer) JoinGame(
 			GameId: int32(gameIDInt),
 			Id:     int32(player.ID),
 			Name:   player_name,
+			Score:  int32(player.Score),
 		},
 	})
 
@@ -163,6 +164,7 @@ func (s *GameServer) CreateGame(
 			GameId: int32(game.ID),
 			Id:     int32(player.ID),
 			Name:   player_name,
+			Score:  int32(player.Score),
 		},
 	})
 
@@ -396,6 +398,18 @@ func (s *GameServer) SubmitAnswer(
 	} else {
 		client := GetDbClient(ctx)
 		defer client.Close()
+		// スコア加減算処理を追加
+		if isCorrect {
+			_, err := client.Player.UpdateOneID(playerID).AddScore(1).Save(ctx)
+			if err != nil {
+				log.Printf("failed to add score: %v", err)
+			}
+		} else {
+			_, err := client.Player.UpdateOneID(playerID).AddScore(-1).Save(ctx)
+			if err != nil {
+				log.Printf("failed to subtract score: %v", err)
+			}
+		}
 		playerEnt, err := client.Player.Query().Where(player.IDEQ(playerID)).Only(ctx)
 		if err != nil {
 			log.Printf("failed to query player: %v", err)

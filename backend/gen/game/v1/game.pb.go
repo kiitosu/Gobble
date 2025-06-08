@@ -27,6 +27,7 @@ type Player struct {
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	GameId        int32                  `protobuf:"varint,3,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	Score         int32                  `protobuf:"varint,4,opt,name=score,proto3" json:"score,omitempty"` // プレイヤーのスコア
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -78,6 +79,13 @@ func (x *Player) GetName() string {
 func (x *Player) GetGameId() int32 {
 	if x != nil {
 		return x.GameId
+	}
+	return 0
+}
+
+func (x *Player) GetScore() int32 {
+	if x != nil {
+		return x.Score
 	}
 	return 0
 }
@@ -747,11 +755,12 @@ var File_game_v1_game_proto protoreflect.FileDescriptor
 
 const file_game_v1_game_proto_rawDesc = "" +
 	"\n" +
-	"\x12game/v1/game.proto\x12\agame.v1\"E\n" +
+	"\x12game/v1/game.proto\x12\agame.v1\"[\n" +
 	"\x06Player\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
-	"\agame_id\x18\x03 \x01(\x05R\x06gameId\"Q\n" +
+	"\agame_id\x18\x03 \x01(\x05R\x06gameId\x12\x14\n" +
+	"\x05score\x18\x04 \x01(\x05R\x05score\"Q\n" +
 	"\x11CreateGameRequest\x12\x1f\n" +
 	"\vplayer_name\x18\x01 \x01(\tR\n" +
 	"playerName\x12\x1b\n" +

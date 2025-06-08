@@ -18,6 +18,8 @@ const (
 	FieldName = "name"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldScore holds the string denoting the score field in the database.
+	FieldScore = "score"
 	// EdgeParent holds the string denoting the parent edge name in mutations.
 	EdgeParent = "parent"
 	// Table holds the table name of the player in the database.
@@ -36,6 +38,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldStatus,
+	FieldScore,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "players"
@@ -62,6 +65,8 @@ func ValidColumn(column string) bool {
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultScore holds the default value on creation for the "score" field.
+	DefaultScore int
 )
 
 // Status defines the type for the "status" enum field.
@@ -109,6 +114,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByScore orders the results by the score field.
+func ByScore(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScore, opts...).ToFunc()
 }
 
 // ByParentField orders the results by parent field.
