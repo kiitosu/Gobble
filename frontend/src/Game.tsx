@@ -2,63 +2,103 @@ import type { Player } from "../gen/game/v1/game_pb";
 
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import { ReportReadyService, SubmitAnswerService } from "../gen/game/v1/game_pb";
+import {
+  ReportReadyService,
+  SubmitAnswerService,
+} from "../gen/game/v1/game_pb";
+
+type Card = { id: number; text: string };
 
 type GameProps = {
-    message: string;
-    started: boolean
-    player?: Player;
-    status?: string;
-    cards?: { id: number; text: string }[]
+  message: string;
+  started: boolean;
+  player?: Player;
+  status?: string;
+  cards?: Card[];
 };
 
 const GameComponent = (props: GameProps) => {
-    const transport = createConnectTransport({
-        baseUrl: "http://localhost:8080"
-    });
+  const transport = createConnectTransport({
+    baseUrl: "http://localhost:8080",
+  });
 
-    const reportReadyServiceclient = createClient(ReportReadyService, transport);
-    const submitAnswerServiceClient = createClient(SubmitAnswerService, transport);
+  const reportReadyServiceclient = createClient(ReportReadyService, transport);
+  const submitAnswerServiceClient = createClient(
+    SubmitAnswerService,
+    transport
+  );
 
-    const handleReadyClick = async () => {
-        if (props.player) {
-            await reportReadyServiceclient.reportReady({
-                playerId: String(props.player.id)
-            });
-        }
-    };
+  // カード受け取り準備完了通知をする
+  const handleReadyClick = async () => {
+    if (props.player) {
+      await reportReadyServiceclient.reportReady({
+        playerId: String(props.player.id),
+      });
+    }
+  };
 
-    const handleSubmitAnswer = async () => {
-        if (props.player) {
-            await submitAnswerServiceClient.submitAnswer({
-                playerId: String(props.player.id),
-                answer: "test answer"
-            });
-        }
-    };
+  // 回答を通知する
+  const handleSubmitAnswer = async (
+    card1: Card,
+    card2: Card,
+    answer: string
+  ) => {
+    if (props.player) {
+      await submitAnswerServiceClient.submitAnswer({
+        playerId: String(props.player.id),
+        card1: card1,
+        card2: card2,
+        answer: answer,
+      });
+    }
+  };
 
-    return (
-        <>
-            {props.status == "STARTED" && (
+  // カードからシンボルを抽出する
+  const extractSymbol = (text: string): string[] => {
+    const match = text.match(/\[(.*?)\]/);
+    return match ? match[1].split(" ") : [];
+  };
+
+  return (
+    <>
+      {/* ゲーム開催中 */}
+      {props.status == "STARTED" && (
+        <div>
+          <button onClick={handleReadyClick}>I'm READY!!!</button>
+
+          <h3>受信カード一覧</h3>
+
+          {props.cards &&
+            [...props.cards].reverse().map((card, index) => (
+              <div key={`${card.id}-${index}`}>
                 <div>
-                    <h3>受信カード一覧</h3>
-                    {props.cards && props.cards.map((card, index) => (
-                        <div key={`${card.id}-${index}`}>
-                            カードID: {card.id} 内容: {card.text}
-                        </div>
-                    ))}
-                    <button onClick={handleReadyClick}>
-                        I'm READY!!!
-                    </button>
+                  カードID: {card.id} 内容: {card.text}
                 </div>
-            )}
+                {props.cards && props.cards.length >= 2 && (
+                  <div>
+                    {extractSymbol(card.text).map((symbol, idx) => (
+                      <button
+                        onClick={()=>handleSubmitAnswer(
+                          props.cards![props.cards!.length - 1],
+                          props.cards![props.cards!.length - 2],
+                          symbol
+                        )}
+                        key={`${card.id}-symbol-${idx}`}
+                        disabled={index !== 0} // 最新のカード（indexが0）のみ有効
+                      >
+                        {symbol}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
 
-            {props.status == "JOINED" && (
-                <>
-                    Waiting for game to start...
-                </>
-            )}
-        </>
-    );
+      {/* ゲーム参加中・開催まち */}
+      {props.status == "JOINED" && <>Waiting for game to start...</>}
+    </>
+  );
 };
 export default GameComponent;

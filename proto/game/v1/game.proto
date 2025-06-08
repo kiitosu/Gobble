@@ -71,9 +71,15 @@ service ReportReadyService {
 }
 
 /* Submit Answer */
+message Card {
+    int32 id = 1;
+    string text = 2;
+}
 message SubmitAnswerRequest {
     string player_id = 1;
-    string answer = 2;
+    Card card1 = 2;
+    Card card2 = 3;
+    string answer = 4;
 }
 
 message SubmitAnswerResponse {

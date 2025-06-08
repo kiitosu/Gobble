@@ -323,6 +323,43 @@ func (s *GameServer) ReportReady(
 	return connect.NewResponse(&gamev1.ReportReadyResponse{}), nil
 }
 
+func isAnswerCorrect(card1, card2 Card, answer string) bool {
+	log.Printf("card1 %v", card1)
+	log.Printf("card2 %v", card2)
+	log.Printf("answer %v", answer)
+
+	// カードのテキストからシンボルを抽出する関数
+	extractSymbols := func(text string) []string {
+		// "symbols: [a b c]" のような形式を想定
+		start := strings.Index(text, "[")
+		end := strings.Index(text, "]")
+		if start == -1 || end == -1 || start >= end {
+			return []string{}
+		}
+		symbolsStr := text[start+1 : end]
+		return strings.Fields(symbolsStr)
+	}
+
+	symbols1 := extractSymbols(card1.Text)
+	symbols2 := extractSymbols(card2.Text)
+
+	// 共通するシンボルを探す
+	symbolSet := make(map[string]struct{})
+	for _, s := range symbols1 {
+		symbolSet[s] = struct{}{}
+	}
+
+	for _, s := range symbols2 {
+		if _, exists := symbolSet[s]; exists && s == answer {
+			log.Printf("answer is correct")
+			return true
+		}
+	}
+
+	log.Printf("answer is wrong")
+	return false
+}
+
 func (s *GameServer) SubmitAnswer(
 	ctx context.Context,
 	req *connect.Request[gamev1.SubmitAnswerRequest],
@@ -331,6 +368,19 @@ func (s *GameServer) SubmitAnswer(
 	defer endLog()
 
 	message := "correct!!!"
+	card1 := Card{
+		ID:   int(req.Msg.Card1.Id),
+		Text: req.Msg.Card1.Text,
+	}
+	card2 := Card{
+		ID:   int(req.Msg.Card2.Id),
+		Text: req.Msg.Card2.Text,
+	}
+	answer := req.Msg.Answer
+	isCorrect := isAnswerCorrect(card1, card2, answer)
+	if !isCorrect {
+		message = "wrong!!!"
+	}
 
 	// player_idからgame_idを特定し、そのゲームのクライアントにbroadcast
 	playerIDStr := req.Msg.PlayerId
@@ -474,7 +524,7 @@ func broadcastToGame(gameID int, message []byte) {
 			conn.Close()
 			delete(conns, conn)
 		} else {
-			log.Printf("broadcast %s　success: %+v", message, conns[conn])
+			log.Printf("broadcast %s success: %+v", message, conns[conn])
 		}
 	}
 }

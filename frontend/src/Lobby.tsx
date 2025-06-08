@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { WebSocketProvider } from "./WebSocketContext";
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import {
@@ -112,9 +111,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               });
               console.log(`Join the game ${response}`);
               setGameStatus("JOINED");
-              if (response.player) {
-                setPlayer(response.player);
-              }
+              setPlayer(response.player);
             }}
           >
             参加

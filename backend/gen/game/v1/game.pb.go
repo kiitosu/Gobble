@@ -579,17 +579,71 @@ func (*ReportReadyResponse) Descriptor() ([]byte, []int) {
 }
 
 // Submit Answer
+type Card struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Card) Reset() {
+	*x = Card{}
+	mi := &file_game_v1_game_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Card) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Card) ProtoMessage() {}
+
+func (x *Card) ProtoReflect() protoreflect.Message {
+	mi := &file_game_v1_game_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Card.ProtoReflect.Descriptor instead.
+func (*Card) Descriptor() ([]byte, []int) {
+	return file_game_v1_game_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *Card) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Card) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
 type SubmitAnswerRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PlayerId      string                 `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
-	Answer        string                 `protobuf:"bytes,2,opt,name=answer,proto3" json:"answer,omitempty"`
+	Card1         *Card                  `protobuf:"bytes,2,opt,name=card1,proto3" json:"card1,omitempty"`
+	Card2         *Card                  `protobuf:"bytes,3,opt,name=card2,proto3" json:"card2,omitempty"`
+	Answer        string                 `protobuf:"bytes,4,opt,name=answer,proto3" json:"answer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SubmitAnswerRequest) Reset() {
 	*x = SubmitAnswerRequest{}
-	mi := &file_game_v1_game_proto_msgTypes[12]
+	mi := &file_game_v1_game_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -601,7 +655,7 @@ func (x *SubmitAnswerRequest) String() string {
 func (*SubmitAnswerRequest) ProtoMessage() {}
 
 func (x *SubmitAnswerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_game_v1_game_proto_msgTypes[12]
+	mi := &file_game_v1_game_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,7 +668,7 @@ func (x *SubmitAnswerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitAnswerRequest.ProtoReflect.Descriptor instead.
 func (*SubmitAnswerRequest) Descriptor() ([]byte, []int) {
-	return file_game_v1_game_proto_rawDescGZIP(), []int{12}
+	return file_game_v1_game_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SubmitAnswerRequest) GetPlayerId() string {
@@ -622,6 +676,20 @@ func (x *SubmitAnswerRequest) GetPlayerId() string {
 		return x.PlayerId
 	}
 	return ""
+}
+
+func (x *SubmitAnswerRequest) GetCard1() *Card {
+	if x != nil {
+		return x.Card1
+	}
+	return nil
+}
+
+func (x *SubmitAnswerRequest) GetCard2() *Card {
+	if x != nil {
+		return x.Card2
+	}
+	return nil
 }
 
 func (x *SubmitAnswerRequest) GetAnswer() string {
@@ -640,7 +708,7 @@ type SubmitAnswerResponse struct {
 
 func (x *SubmitAnswerResponse) Reset() {
 	*x = SubmitAnswerResponse{}
-	mi := &file_game_v1_game_proto_msgTypes[13]
+	mi := &file_game_v1_game_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -652,7 +720,7 @@ func (x *SubmitAnswerResponse) String() string {
 func (*SubmitAnswerResponse) ProtoMessage() {}
 
 func (x *SubmitAnswerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_game_v1_game_proto_msgTypes[13]
+	mi := &file_game_v1_game_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -665,7 +733,7 @@ func (x *SubmitAnswerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitAnswerResponse.ProtoReflect.Descriptor instead.
 func (*SubmitAnswerResponse) Descriptor() ([]byte, []int) {
-	return file_game_v1_game_proto_rawDescGZIP(), []int{13}
+	return file_game_v1_game_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SubmitAnswerResponse) GetIsCorrect() string {
@@ -708,10 +776,15 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x11StartGameResponse\"1\n" +
 	"\x12ReportReadyRequest\x12\x1b\n" +
 	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\"\x15\n" +
-	"\x13ReportReadyResponse\"J\n" +
+	"\x13ReportReadyResponse\"*\n" +
+	"\x04Card\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\"\x94\x01\n" +
 	"\x13SubmitAnswerRequest\x12\x1b\n" +
-	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12\x16\n" +
-	"\x06answer\x18\x02 \x01(\tR\x06answer\"5\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12#\n" +
+	"\x05card1\x18\x02 \x01(\v2\r.game.v1.CardR\x05card1\x12#\n" +
+	"\x05card2\x18\x03 \x01(\v2\r.game.v1.CardR\x05card2\x12\x16\n" +
+	"\x06answer\x18\x04 \x01(\tR\x06answer\"5\n" +
 	"\x14SubmitAnswerResponse\x12\x1d\n" +
 	"\n" +
 	"is_correct\x18\x01 \x01(\tR\tisCorrect2\\\n" +
@@ -741,7 +814,7 @@ func file_game_v1_game_proto_rawDescGZIP() []byte {
 	return file_game_v1_game_proto_rawDescData
 }
 
-var file_game_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_game_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_game_v1_game_proto_goTypes = []any{
 	(*Player)(nil),               // 0: game.v1.Player
 	(*CreateGameRequest)(nil),    // 1: game.v1.CreateGameRequest
@@ -755,30 +828,33 @@ var file_game_v1_game_proto_goTypes = []any{
 	(*StartGameResponse)(nil),    // 9: game.v1.StartGameResponse
 	(*ReportReadyRequest)(nil),   // 10: game.v1.ReportReadyRequest
 	(*ReportReadyResponse)(nil),  // 11: game.v1.ReportReadyResponse
-	(*SubmitAnswerRequest)(nil),  // 12: game.v1.SubmitAnswerRequest
-	(*SubmitAnswerResponse)(nil), // 13: game.v1.SubmitAnswerResponse
+	(*Card)(nil),                 // 12: game.v1.Card
+	(*SubmitAnswerRequest)(nil),  // 13: game.v1.SubmitAnswerRequest
+	(*SubmitAnswerResponse)(nil), // 14: game.v1.SubmitAnswerResponse
 }
 var file_game_v1_game_proto_depIdxs = []int32{
 	0,  // 0: game.v1.CreateGameResponse.player:type_name -> game.v1.Player
 	4,  // 1: game.v1.GetGamesResponse.games:type_name -> game.v1.Game
 	0,  // 2: game.v1.JoinGameResponse.player:type_name -> game.v1.Player
-	1,  // 3: game.v1.CreateGameService.CreateGame:input_type -> game.v1.CreateGameRequest
-	3,  // 4: game.v1.GetGamesService.GetGames:input_type -> game.v1.GetGamesRequest
-	6,  // 5: game.v1.JoinGameService.JoinGame:input_type -> game.v1.JoinGameRequest
-	8,  // 6: game.v1.StartGameService.StartGame:input_type -> game.v1.StartGameRequest
-	10, // 7: game.v1.ReportReadyService.ReportReady:input_type -> game.v1.ReportReadyRequest
-	12, // 8: game.v1.SubmitAnswerService.SubmitAnswer:input_type -> game.v1.SubmitAnswerRequest
-	2,  // 9: game.v1.CreateGameService.CreateGame:output_type -> game.v1.CreateGameResponse
-	5,  // 10: game.v1.GetGamesService.GetGames:output_type -> game.v1.GetGamesResponse
-	7,  // 11: game.v1.JoinGameService.JoinGame:output_type -> game.v1.JoinGameResponse
-	9,  // 12: game.v1.StartGameService.StartGame:output_type -> game.v1.StartGameResponse
-	11, // 13: game.v1.ReportReadyService.ReportReady:output_type -> game.v1.ReportReadyResponse
-	13, // 14: game.v1.SubmitAnswerService.SubmitAnswer:output_type -> game.v1.SubmitAnswerResponse
-	9,  // [9:15] is the sub-list for method output_type
-	3,  // [3:9] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	12, // 3: game.v1.SubmitAnswerRequest.card1:type_name -> game.v1.Card
+	12, // 4: game.v1.SubmitAnswerRequest.card2:type_name -> game.v1.Card
+	1,  // 5: game.v1.CreateGameService.CreateGame:input_type -> game.v1.CreateGameRequest
+	3,  // 6: game.v1.GetGamesService.GetGames:input_type -> game.v1.GetGamesRequest
+	6,  // 7: game.v1.JoinGameService.JoinGame:input_type -> game.v1.JoinGameRequest
+	8,  // 8: game.v1.StartGameService.StartGame:input_type -> game.v1.StartGameRequest
+	10, // 9: game.v1.ReportReadyService.ReportReady:input_type -> game.v1.ReportReadyRequest
+	13, // 10: game.v1.SubmitAnswerService.SubmitAnswer:input_type -> game.v1.SubmitAnswerRequest
+	2,  // 11: game.v1.CreateGameService.CreateGame:output_type -> game.v1.CreateGameResponse
+	5,  // 12: game.v1.GetGamesService.GetGames:output_type -> game.v1.GetGamesResponse
+	7,  // 13: game.v1.JoinGameService.JoinGame:output_type -> game.v1.JoinGameResponse
+	9,  // 14: game.v1.StartGameService.StartGame:output_type -> game.v1.StartGameResponse
+	11, // 15: game.v1.ReportReadyService.ReportReady:output_type -> game.v1.ReportReadyResponse
+	14, // 16: game.v1.SubmitAnswerService.SubmitAnswer:output_type -> game.v1.SubmitAnswerResponse
+	11, // [11:17] is the sub-list for method output_type
+	5,  // [5:11] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_game_v1_game_proto_init() }
@@ -792,7 +868,7 @@ func file_game_v1_game_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_v1_game_proto_rawDesc), len(file_game_v1_game_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   6,
 		},
