@@ -259,7 +259,7 @@ const GameComponent = (props: GameProps) => {
 
           <h3>カード一覧</h3>
 
-          <div style={{ height: "240px" }}>
+          <div style={{ height: "240px", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {props.cards &&
               [...props.cards].reverse().map((card, index) => (
                 <div key={`${card.id}-${index}`} style={{ marginBottom: "16px", border: "2px solid gray", borderRadius: "8px", padding: "12px", width: `${extractSymbol(card.text).length *60}px` }}>
