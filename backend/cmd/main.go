@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -145,6 +146,13 @@ func (s *GameServer) CreateGame(
 
 	// Dobbleカード生成
 	cards, _, err := cardgen.GenerateDobbleCards(2)
+	if err != nil {
+		log.Fatalf("failed to generate cards: %v", err)
+	}
+
+	rand.Shuffle(len(cards), func(i, j int) {
+		cards[i], cards[j] = cards[j], cards[i]
+	})
 	if err != nil {
 		log.Printf("failed to generate dobble cards: %v", err)
 	} else {

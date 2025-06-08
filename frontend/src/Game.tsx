@@ -262,14 +262,14 @@ const GameComponent = (props: GameProps) => {
           <div style={{ height: "240px" }}>
             {props.cards &&
               [...props.cards].reverse().map((card, index) => (
-                <div key={`${card.id}-${index}`} style={{ marginBottom: "16px", border: "2px solid gray", borderRadius: "8px", padding: "12px" }}>
+                <div key={`${card.id}-${index}`} style={{ marginBottom: "16px", border: "2px solid gray", borderRadius: "8px", padding: "12px", width: `${extractSymbol(card.text).length *60}px` }}>
                   {/* <div>
                     カードID: {card.id} 内容: {card.text}
                   </div> */}
                   
 
                   {props.cards && props.cards.length >= 1 && (
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "space-around" }}>
                       {extractSymbol(card.text).map((symbol, idx) => (
                         <button
                           onClick={() =>
