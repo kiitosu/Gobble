@@ -16,7 +16,12 @@ type GameProps = {
   player?: Player;
   status?: string;
   cards?: Card[];
-  answer?: { playerId: number; isCorrect: boolean; answer: string; userAnswer: string };
+  answer?: {
+    playerId: number;
+    isCorrect: boolean;
+    answer: string;
+    userAnswer: string;
+  };
   dealACard: string;
   setDealACard: React.Dispatch<React.SetStateAction<string>>;
   scores: { player_id: number; score: number }[];
@@ -71,10 +76,29 @@ const GameComponent = (props: GameProps) => {
   };
 
   // カードからシンボルを抽出する
-  const extractSymbol = (text: string): string[] => {
+  const iconMap: { [key: string]: string } = {
+    "0": "✈️",
+    "1": "🌞",
+    "2": "🌙",
+    "3": "⭐️",
+    "4": "🔥",
+    "5": "💧",
+    "6": "🍀",
+    "7": "⚡",
+    "8": "🐱",
+    "9": "🐶",
+    "10": "🐸",
+    "11": "🐦",
+    "12": "🚗",
+  };
+
+  // シンボルの数字配列を返す
+  const extractSymbolNumbers = (text: string): string[] => {
     const match = text.match(/\[(.*?)\]/);
     return match ? match[1].split(" ") : [];
   };
+  // 表示用にアイコンへ変換
+  const toIcon = (num: string) => iconMap[num] || num;
 
   return (
     <>
@@ -179,7 +203,7 @@ const GameComponent = (props: GameProps) => {
                       marginBottom: "6px",
                     }}
                   >
-                    正解シンボル: {String(props.answer.answer)}
+                    正解シンボル: {toIcon(String(props.answer.answer))}
                   </div>
                   <div
                     style={{
@@ -188,7 +212,8 @@ const GameComponent = (props: GameProps) => {
                       marginBottom: "6px",
                     }}
                   >
-                    選択されたシンボル: {String(props.answer.userAnswer)}
+                    選択されたシンボル:{" "}
+                    {toIcon(String(props.answer.userAnswer))}
                   </div>
                 </>
               )}
@@ -205,7 +230,7 @@ const GameComponent = (props: GameProps) => {
                     .slice(-2)
                     .reverse()
                     .map((card, idx) => {
-                      const symbols = extractSymbol(card.text);
+                      const symbolNums = extractSymbolNumbers(card.text);
                       return (
                         <div
                           key={card.id}
@@ -218,11 +243,11 @@ const GameComponent = (props: GameProps) => {
                               justifyContent: "flex-start",
                             }}
                           >
-                            {symbols.map((symbol, sidx) => {
+                            {symbolNums.map((num, sidx) => {
                               // 最新カード（idx === 0）かつ正解シンボルのみ色変更
                               const isCorrect =
                                 props.answer &&
-                                String(symbol) === String(props.answer.answer);
+                                String(num) === String(props.answer.answer);
                               return (
                                 <div
                                   key={sidx}
@@ -238,7 +263,7 @@ const GameComponent = (props: GameProps) => {
                                     marginBottom: "2px",
                                   }}
                                 >
-                                  {symbol}
+                                  {toIcon(num)}
                                 </div>
                               );
                             })}
@@ -259,32 +284,56 @@ const GameComponent = (props: GameProps) => {
 
           <h3>カード一覧</h3>
 
-          <div style={{ height: "240px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div
+            style={{
+              height: "240px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
             {props.cards &&
               [...props.cards].reverse().map((card, index) => (
-                <div key={`${card.id}-${index}`} style={{ marginBottom: "16px", border: "2px solid gray", borderRadius: "8px", padding: "12px", width: `${extractSymbol(card.text).length *60}px` }}>
+                <div
+                  key={`${card.id}-${index}`}
+                  style={{
+                    marginBottom: "16px",
+                    border: "2px solid gray",
+                    borderRadius: "8px",
+                    padding: "12px",
+                    width: `${extractSymbolNumbers(card.text).length * 60}px`,
+                  }}
+                >
                   {/* <div>
                     カードID: {card.id} 内容: {card.text}
                   </div> */}
-                  
 
                   {props.cards && props.cards.length >= 1 && (
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "space-around" }}>
-                      {extractSymbol(card.text).map((symbol, idx) => (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                        justifyContent: "space-around",
+                      }}
+                    >
+                      {extractSymbolNumbers(card.text).map((num, idx) => (
                         <button
                           onClick={() =>
                             handleSubmitAnswer(
                               props.cards![props.cards!.length - 1],
                               props.cards![props.cards!.length - 2],
-                              symbol
+                              num
                             )
                           }
                           key={`${card.id}-symbol-${idx}`}
                           disabled={
-                            index === 1 || props.dealACard !== NEED_ANSWER || index > 1
+                            index === 1 ||
+                            props.dealACard !== NEED_ANSWER ||
+                            index > 1
                           } // 最新のカード（indexが0）のみ有効、1枚目のカード（indexが1）は常にdisabled
                         >
-                          {symbol}
+                          {toIcon(num)}
                         </button>
                       ))}
                     </div>

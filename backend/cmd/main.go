@@ -145,7 +145,7 @@ func (s *GameServer) CreateGame(
 	}
 
 	// Dobbleカード生成
-	cards, _, err := cardgen.GenerateDobbleCards(2)
+	cards, _, err := cardgen.GenerateDobbleCards(3)
 	if err != nil {
 		log.Fatalf("failed to generate cards: %v", err)
 	}
