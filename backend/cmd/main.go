@@ -108,6 +108,12 @@ func (s *GameServer) JoinGame(
 		},
 	})
 
+	msg := map[string]interface{}{
+		"event": "JOINED",
+	}
+	b, _ := json.Marshal(msg)
+	broadcastToAll(b)
+
 	log.Printf("User %s join the game %s", player_name, game_id)
 	return res, nil
 }

@@ -78,6 +78,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             setCards((prev) => [...prev, msg.card]);
           }
 
+          if (msg.event === "JOINED") {
+            setGameStatus("READY")
+          }
 
 
         } catch {
@@ -128,7 +131,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           </button>
         </li>
       ));
-  } else if (gameStatus === "CREATED") {
+  } else if (gameStatus === "CREATED" || gameStatus === "JOINED" || gameStatus === "READY") {
     gameList = games
       .filter((item) => item.status === "CREATED")
       .sort((a, b) => b.id - a.id) // 降順ソートを追加
@@ -144,6 +147,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               console.log(response);
               setGameStatus("STARTED");
             }}
+            disabled = {gameStatus !== "READY"}
           >
             開始
           </button>
@@ -215,6 +219,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           {/* ゲーム情報表示 */}
           <div>Games</div>
+          {
+            gameStatus === "CREATED" ? <div>please wait for a player...</div> : <div>please reload to get the games...</div>
+          }
           <div className="scrollable-list">
             <ul>{gameList}</ul>
           </div>
