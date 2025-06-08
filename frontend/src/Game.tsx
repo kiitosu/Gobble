@@ -19,6 +19,7 @@ type GameProps = {
   answer?: { playerId: number; isCorrect: boolean };
   dealACard: string;
   setDealACard: React.Dispatch<React.SetStateAction<string>>;
+  scores: { player_id: number; score: number }[];
 };
 
 
@@ -71,12 +72,30 @@ const GameComponent = (props: GameProps) => {
       {/* ゲーム開催中 */}
       {props.status === "STARTED" && (
         <div>
-          {/* スコア表示 */}
-          {props.player && (
-            <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
-              スコア: {props.player.score}
-            </div>
-          )}
+          {/* 全員分のスコア表示 */}
+          <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
+            <h3>参加者全員のスコア</h3>
+            {props.scores && props.scores.length > 0 ? (
+              <>
+                {/* 自分のスコアを一番上に表示 */}
+                {props.player && props.scores.find(s => s.player_id === props.player!.id) && (
+                  <div style={{ color: "#1976d2" }}>
+                    あなたのスコア: {props.scores.find(s => s.player_id === props.player!.id)?.score}点
+                  </div>
+                )}
+                {/* 他のプレイヤーのスコア */}
+                {props.scores
+                  .filter(score => !props.player || score.player_id !== props.player.id)
+                  .map((score) => (
+                    <div key={score.player_id}>
+                      プレイヤー {score.player_id}: {score.score}点
+                    </div>
+                  ))}
+              </>
+            ) : (
+              <div>スコア情報なし</div>
+            )}
+          </div>
           <div>
             {props.answer && props.player && (
               <>

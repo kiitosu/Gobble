@@ -26,6 +26,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
   const [started, setStarted] = useState<boolean>(false);
   const [answer, setAnswer] = useState<{ playerId: number; isCorrect: boolean }>();
+  const [scores, setScores] = useState<{ player_id: number; score: number }[]>([]);
 
   const transport = useMemo(
     () =>
@@ -72,10 +73,13 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           }
 
           if (msg.event === "ANSWERED") {
-            setAnswer({ playerId: Number(msg.player_id), isCorrect: msg.is_correct })
-            setDealACard(DEAL_A_CARD)
-            console.log(answer)
-            console.log("hogehoge")
+            setAnswer({ playerId: Number(msg.player_id), isCorrect: msg.is_correct });
+            setDealACard(DEAL_A_CARD);
+            if (msg.scores) {
+              setScores(msg.scores);
+            }
+            console.log(answer);
+            console.log("hogehoge");
           }
 
           if (msg.event === "card" && msg.card) {
@@ -226,6 +230,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           answer={answer}
           dealACard={dealACard}
           setDealACard={setDealACard}
+          scores={scores}
         />
       ) : (
         <div>

@@ -418,10 +418,22 @@ func (s *GameServer) SubmitAnswer(
 			if err != nil {
 				log.Printf("failed to query parent game: %v", err)
 			} else {
+				// 参加者全員のスコアを取得
+				players, err := gameEnt.QueryPlayers().All(ctx)
+				scores := []map[string]interface{}{}
+				if err == nil {
+					for _, p := range players {
+						scores = append(scores, map[string]interface{}{
+							"player_id": p.ID,
+							"score":     p.Score,
+						})
+					}
+				}
 				msg := map[string]interface{}{
 					"event":      "ANSWERED",
 					"player_id":  playerID,
 					"is_correct": isCorrect,
+					"scores":     scores,
 				}
 				b, _ := json.Marshal(msg)
 				broadcastToGame(gameEnt.ID, b)
