@@ -39,7 +39,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const transport = useMemo(
     () =>
       createConnectTransport({
-        baseUrl: "http://localhost:8080",
+        baseUrl: import.meta.env.VITE_BACKEND_URL || "http://localhost:8080",
       }),
     []
   );
@@ -54,7 +54,10 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   // player情報が揃ったらWebSocket接続
   useEffect(() => {
     if (player && player.gameId && player.id && !ws.current) {
-      ws.current = new WebSocket("ws://localhost:8080/ws");
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+      const wsUrl = backendUrl.replace(/^http/, "ws") + "/ws";
+      ws.current = new WebSocket(wsUrl);
       ws.current.onopen = () => {
         ws.current?.send(
           JSON.stringify({ game_id: player.gameId, player_id: player.id })
