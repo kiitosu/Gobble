@@ -615,7 +615,7 @@ func broadcastToAll(message []byte) {
 /* CORS */
 func withCORS(h http.Handler) http.Handler {
 	return cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"},
+		AllowedOrigins: []string{"http://localhost:5173", "https://gobble-2.onrender.com"},
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "X-User-Agent", "Connect-Protocol-Version"},
 	}).Handler(h)
@@ -630,6 +630,7 @@ var unsentCards = make(map[int][]Card)
 
 /* main */
 func main() {
+	log.Printf("Starting server on 0.0.0.0:8080")
 
 	// .dbディレクトリがなければ作成する
 	dbDir := filepath.Dir("backend/.db/ent.db")
