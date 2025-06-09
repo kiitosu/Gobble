@@ -374,7 +374,7 @@ const GameComponent = (props: GameProps) => {
                   props.cards
                     .slice(-2)
                     .reverse()
-                    .map((card, idx) => {
+                    .map((card) => {
                       const symbolNums = extractSymbolNumbers(card.text);
                       return (
                         <div
