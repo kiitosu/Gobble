@@ -121,7 +121,13 @@ const GameComponent = (props: GameProps) => {
   const toIcon = (num: string) => iconMap[num] || num;
 
   // カード内のシンボルをランダム配置するためのコンポーネント
-  const SymbolRandomLayout = ({ symbols, cardId }: { symbols: string[]; cardId: number }) => {
+  const SymbolRandomLayout = ({
+    symbols,
+    cardId,
+  }: {
+    symbols: string[];
+    cardId: number;
+  }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -150,7 +156,14 @@ const GameComponent = (props: GameProps) => {
       const maxTop = containerSize.height - minSize;
       const maxLeft = containerSize.width - minSize;
 
-      const isOverlap = (x1: number, y1: number, size1: number, x2: number, y2: number, size2: number) => {
+      const isOverlap = (
+        x1: number,
+        y1: number,
+        size1: number,
+        x2: number,
+        y2: number,
+        size2: number
+      ) => {
         const distance = Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
         return distance < (size1 + size2) / 2;
       };
@@ -166,7 +179,9 @@ const GameComponent = (props: GameProps) => {
           // 10回試しても重ならなければ強制的に配置
           if (attempts > 10) break;
         } while (
-          posArray.some((pos) => isOverlap(pos.left, pos.top, pos.size, left, top, size))
+          posArray.some((pos) =>
+            isOverlap(pos.left, pos.top, pos.size, left, top, size)
+          )
         );
         posArray.push({ top, left, size });
         // 回転角度もランダムに決定（0〜359度）
@@ -191,28 +206,28 @@ const GameComponent = (props: GameProps) => {
         {symbols.map((num, idx) => (
           <button
             key={idx}
-              style={{
-                position: "absolute",
-                top: positions.positions[idx]?.top ?? 0,
-                left: positions.positions[idx]?.left ?? 0,
-                width: positions.positions[idx]?.size ?? 40,
-                height: positions.positions[idx]?.size ?? 40,
-                borderRadius: "50%",
-                border: "1px solid #1976d2",
-                backgroundColor: "#1976d2",
-                color: "white",
-                fontSize: `${(positions.positions[idx]?.size ?? 40) * 0.8}px`,
+            style={{
+              position: "absolute",
+              top: positions.positions[idx]?.top ?? 0,
+              left: positions.positions[idx]?.left ?? 0,
+              width: positions.positions[idx]?.size ?? 40,
+              height: positions.positions[idx]?.size ?? 40,
+              borderRadius: "50%",
+              border: "1px solid #1976d2",
+              backgroundColor: "#1976d2",
+              color: "white",
+              fontSize: `${(positions.positions[idx]?.size ?? 40) * 0.8}px`,
               lineHeight: 1,
               textAlign: "center",
               userSelect: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 0,
-                transform: `rotate(${positions.rotations[idx]}deg)`,
-                transition: "transform 0.3s ease",
-              }}
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              transform: `rotate(${positions.rotations[idx]}deg)`,
+              transition: "transform 0.3s ease",
+            }}
             onClick={() =>
               handleSubmitAnswer(
                 props.cards![props.cards!.length - 1],
@@ -220,9 +235,7 @@ const GameComponent = (props: GameProps) => {
                 num
               )
             }
-            disabled={
-              props.dealACard !== NEED_ANSWER
-            }
+            disabled={props.dealACard !== NEED_ANSWER}
             aria-label={`シンボル ${toIcon(num)}`}
           >
             {toIcon(num)}
@@ -424,7 +437,7 @@ const GameComponent = (props: GameProps) => {
               alignItems: "center",
             }}
           >
-              {props.cards &&
+            {props.cards &&
               [...props.cards].reverse().map((card) => {
                 const symbolNums = extractSymbolNumbers(card.text);
                 return (

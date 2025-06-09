@@ -259,7 +259,10 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             <div style={{ marginTop: "16px", textAlign: "center" }}>
               {scores.map((score) => (
                 <div key={score.player_id}>
-                  {score.player_id === player?.id ? "あなた" : `プレイヤー ${score.player_id}`}: {score.score}点
+                  {score.player_id === player?.id
+                    ? "あなた"
+                    : `プレイヤー ${score.player_id}`}
+                  : {score.score}点
                 </div>
               ))}
             </div>
