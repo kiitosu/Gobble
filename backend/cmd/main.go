@@ -6,6 +6,8 @@ import (
 	"log"
 	"math/rand/v2"
 	"net/http"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -628,6 +630,15 @@ var unsentCards = make(map[int][]Card)
 
 /* main */
 func main() {
+
+	// .dbディレクトリがなければ作成する
+	dbDir := filepath.Dir("backend/.db/ent.db")
+	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dbDir, os.ModePerm); err != nil {
+			log.Fatalf("failed to create db directory: %v", err)
+		}
+	}
+
 	// サーバー起動時に一度だけスキーマ作成
 	client, err := ent.Open(dialect.SQLite, DB_FILE)
 	if err != nil {
