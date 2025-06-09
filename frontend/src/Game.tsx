@@ -41,7 +41,7 @@ const GameComponent = (props: GameProps) => {
   }, [props.answer, props.player]);
 
   const transport = createConnectTransport({
-    baseUrl: "http://localhost:8080",
+    baseUrl: import.meta.env.VITE_BACKEND_URL || "http://localhost:8080",
   });
 
   const reportReadyServiceclient = createClient(ReportReadyService, transport);
