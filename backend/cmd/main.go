@@ -482,7 +482,7 @@ func (s *GameServer) SubmitAnswer(
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		return origin == "http://localhost:5173" || origin == "https://gobble-2.onrender.com"
+		return origin == "http://localhost:5173" || origin == "https://gobble-frontend.onrender.com"
 	},
 }
 
@@ -616,7 +616,7 @@ func broadcastToAll(message []byte) {
 /* CORS */
 func withCORS(h http.Handler) http.Handler {
 	return cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173", "https://gobble-2.onrender.com"},
+		AllowedOrigins: []string{"http://localhost:5173", "https://gobble-frontend.onrender.com"},
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "X-User-Agent", "Connect-Protocol-Version"},
 	}).Handler(h)
