@@ -481,7 +481,8 @@ func (s *GameServer) SubmitAnswer(
 /* websocket */
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return r.Header.Get("Origin") == "http://localhost:5173"
+		origin := r.Header.Get("Origin")
+		return origin == "http://localhost:5173" || origin == "https://gobble-2.onrender.com"
 	},
 }
 
