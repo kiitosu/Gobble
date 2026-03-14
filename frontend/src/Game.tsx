@@ -95,6 +95,7 @@ const GameComponent = (props: GameProps) => {
   const toIcon = (num: string) => iconMap[num] || num;
 
   // カード内のシンボルをランダム配置するためのコンポーネント
+  // 円形カードの内側に収まるよう、中心座標ベースで配置
   const SymbolRandomLayout = ({
     symbols,
     cardId,
@@ -119,72 +120,104 @@ const GameComponent = (props: GameProps) => {
       return seedrandom(seed);
     }, [props.message, cardId]);
 
-    const minSize = 36;
-    const maxSize = 64;
-    const padding = 12;
+    // 事前定義されたスロット（中心からの相対位置 -1〜1、サイズ比率）
+    // 6シンボル用: 中央に1つ大きめ + 周囲に5つ（サイズにバリエーション）
+    const slotTemplates: { x: number; y: number; size: number }[][] = [
+      // 6個用
+      [
+        { x: 0.0,  y: 0.0,  size: 0.42 },
+        { x: 0.0,  y: -0.55, size: 0.28 },
+        { x: 0.52, y: -0.17, size: 0.20 },
+        { x: 0.32, y: 0.45,  size: 0.14 },
+        { x: -0.32, y: 0.45, size: 0.24 },
+        { x: -0.52, y: -0.17, size: 0.12 },
+      ],
+      // 6個用 別パターン
+      [
+        { x: -0.20, y: -0.10, size: 0.40 },
+        { x: 0.35,  y: -0.35, size: 0.22 },
+        { x: 0.35,  y: 0.30,  size: 0.28 },
+        { x: -0.15, y: 0.50,  size: 0.12 },
+        { x: -0.50, y: 0.22,  size: 0.16 },
+        { x: 0.05,  y: -0.58, size: 0.14 },
+      ],
+      // 6個用 さらに別パターン
+      [
+        { x: 0.18,  y: 0.10,  size: 0.44 },
+        { x: -0.38, y: -0.30, size: 0.24 },
+        { x: 0.42,  y: -0.35, size: 0.14 },
+        { x: -0.48, y: 0.25,  size: 0.18 },
+        { x: 0.15,  y: 0.52,  size: 0.12 },
+        { x: -0.12, y: -0.55, size: 0.16 },
+      ],
+    ];
+
     const positions = React.useMemo(() => {
-      const posArray: { top: number; left: number; size: number }[] = [];
-      const rotations: number[] = [];
-      const maxTop = containerSize.height - maxSize - padding;
-      const maxLeft = containerSize.width - maxSize - padding;
+      const containerR = Math.min(containerSize.width, containerSize.height) / 2;
+      const centerX = containerSize.width / 2;
+      const centerY = containerSize.height / 2;
 
-      const isOverlap = (
-        x1: number, y1: number, size1: number,
-        x2: number, y2: number, size2: number
-      ) => {
-        const distance = Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
-        return distance < (size1 + size2) / 2 + 4;
-      };
+      // カードIDに基づいてテンプレートを選択
+      const templateIdx = Math.floor(rng() * slotTemplates.length);
+      const template = slotTemplates[templateIdx];
 
-      for (let i = 0; i < symbols.length; i++) {
-        let top: number, left: number, size: number;
-        let attempts = 0;
-        do {
-          size = Math.floor(rng() * (maxSize - minSize + 1)) + minSize;
-          top = padding + Math.floor(rng() * (maxTop > 0 ? maxTop : 0));
-          left = padding + Math.floor(rng() * (maxLeft > 0 ? maxLeft : 0));
-          attempts++;
-          if (attempts > 20) break;
-        } while (
-          posArray.some((pos) =>
-            isOverlap(pos.left, pos.top, pos.size, left, top, size)
-          )
-        );
-        posArray.push({ top, left, size });
-        rotations.push(Math.floor(rng() * 60) - 30);
+      // スロットの割り当てをシャッフル（どのシンボルがどの位置に来るか）
+      const indices = symbols.map((_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
       }
-      return { positions: posArray, rotations };
+
+      const placed = symbols.map((_, symIdx) => {
+        const slotIdx = indices[symIdx] % template.length;
+        const slot = template[slotIdx];
+        return {
+          cx: centerX + slot.x * containerR,
+          cy: centerY + slot.y * containerR,
+          size: slot.size * containerR * 2,
+        };
+      });
+
+      const rotations = symbols.map(() =>
+        Math.floor(rng() * 50) - 25
+      );
+
+      return { placed, rotations };
     }, [symbols, containerSize, rng]);
 
     return (
       <div ref={containerRef} className="relative w-full h-full">
-        {symbols.map((num, idx) => (
-          <button
-            key={idx}
-            className="absolute flex items-center justify-center cursor-pointer
-                       hover:scale-125 transition-transform duration-150 disabled:opacity-40
-                       select-none p-0 bg-transparent border-none"
-            style={{
-              top: positions.positions[idx]?.top ?? 0,
-              left: positions.positions[idx]?.left ?? 0,
-              width: positions.positions[idx]?.size ?? 40,
-              height: positions.positions[idx]?.size ?? 40,
-              fontSize: `${(positions.positions[idx]?.size ?? 40) * 0.75}px`,
-              transform: `rotate(${positions.rotations[idx]}deg)`,
-            }}
-            onClick={() =>
-              handleSubmitAnswer(
-                props.cards![props.cards!.length - 1],
-                props.cards![props.cards!.length - 2],
-                num
-              )
-            }
-            disabled={props.dealACard !== NEED_ANSWER}
-            aria-label={`シンボル ${toIcon(num)}`}
-          >
-            {toIcon(num)}
-          </button>
-        ))}
+        {symbols.map((num, idx) => {
+          const p = positions.placed[idx];
+          if (!p) return null;
+          return (
+            <button
+              key={idx}
+              className="absolute flex items-center justify-center cursor-pointer
+                         hover:scale-125 transition-transform duration-150 disabled:opacity-40
+                         select-none p-0 bg-transparent border-none"
+              style={{
+                top: p.cy - p.size / 2,
+                left: p.cx - p.size / 2,
+                width: p.size,
+                height: p.size,
+                fontSize: `${p.size * 0.75}px`,
+                transform: `rotate(${positions.rotations[idx]}deg)`,
+              }}
+              onClick={() =>
+                handleSubmitAnswer(
+                  props.cards![props.cards!.length - 1],
+                  props.cards![props.cards!.length - 2],
+                  num
+                )
+              }
+              disabled={props.dealACard !== NEED_ANSWER}
+              aria-label={`シンボル ${toIcon(num)}`}
+            >
+              {toIcon(num)}
+            </button>
+          );
+        })}
       </div>
     );
   };
