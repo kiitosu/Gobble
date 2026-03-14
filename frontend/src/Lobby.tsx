@@ -35,6 +35,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
     []
   );
   const [gameOver, setGameOver] = useState<boolean>(false);
+  const [countdown, setCountdown] = useState<number>(0);
+  const cardsRef = useRef<{ id: number; text: string }[]>([]);
 
   const transport = useMemo(
     () =>
@@ -99,15 +101,33 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           if (msg.event === "card" && msg.card) {
             console.log("Received card:", msg.card);
-            setCards((prev) => {
-              const next = [...prev, msg.card];
-              if (next.length < 2) {
-                setDealACard(DEAL_A_CARD);
-              } else {
-                setDealACard(NEED_ANSWER);
-              }
-              return next;
-            });
+            const pendingCard = msg.card;
+            const currentCards = cardsRef.current;
+
+            if (currentCards.length < 1) {
+              // 最初のカードは即座に表示
+              const next = [...currentCards, pendingCard];
+              cardsRef.current = next;
+              setCards(next);
+              setDealACard(DEAL_A_CARD);
+            } else {
+              // 2枚目以降: カウントダウン後に表示
+              setCountdown(3);
+              let count = 3;
+              const interval = setInterval(() => {
+                count--;
+                if (count <= 0) {
+                  clearInterval(interval);
+                  setCountdown(0);
+                  const next = [...cardsRef.current, pendingCard];
+                  cardsRef.current = next;
+                  setCards(next);
+                  setDealACard(NEED_ANSWER);
+                } else {
+                  setCountdown(count);
+                }
+              }, 1000);
+            }
           }
 
           if (msg.event === "JOINED") {
@@ -208,6 +228,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           dealACard={dealACard}
           setDealACard={setDealACard}
           scores={scores}
+          countdown={countdown}
         />
       </div>
     );
@@ -248,7 +269,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               ]);
               setGameStatus("CREATED");
             }}
-            className="flex gap-3 justify-center mb-10"
+            className="flex flex-col sm:flex-row gap-3 items-center justify-center mb-10"
           >
             <input
               value={gameName}

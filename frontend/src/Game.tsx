@@ -25,6 +25,7 @@ type GameProps = {
   dealACard: string;
   setDealACard: React.Dispatch<React.SetStateAction<string>>;
   scores: { player_id: number; score: number }[];
+  countdown: number;
 };
 
 import React, { useState, useEffect } from "react";
@@ -32,11 +33,12 @@ import React, { useState, useEffect } from "react";
 import seedrandom from "seedrandom";
 
 const GameComponent = (props: GameProps) => {
-  const [showDialog, setShowDialog] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
 
   useEffect(() => {
     if (props.answer && props.player) {
-      setShowDialog(true);
+      setShowResult(true);
     }
   }, [props.answer, props.player]);
 
@@ -53,10 +55,16 @@ const GameComponent = (props: GameProps) => {
   // カード受け取り準備完了通知をする
   const handleReadyClick = async () => {
     if (props.player) {
-      props.setDealACard(WAIT_FOR_OTHER_PLAYERS);
-      await reportReadyServiceclient.reportReady({
-        playerId: String(props.player.id),
-      });
+      // 移動アニメーション開始
+      setIsMoving(true);
+      setTimeout(() => {
+        setIsMoving(false);
+        setShowResult(false);
+        props.setDealACard(WAIT_FOR_OTHER_PLAYERS);
+        reportReadyServiceclient.reportReady({
+          playerId: String(props.player!.id),
+        });
+      }, 500);
     }
   };
 
@@ -99,9 +107,13 @@ const GameComponent = (props: GameProps) => {
   const SymbolRandomLayout = ({
     symbols,
     cardId,
+    highlightSymbol,
+    wrongSymbol,
   }: {
     symbols: string[];
     cardId: number;
+    highlightSymbol?: string;
+    wrongSymbol?: string;
   }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -190,12 +202,15 @@ const GameComponent = (props: GameProps) => {
         {symbols.map((num, idx) => {
           const p = positions.placed[idx];
           if (!p) return null;
+          const isHighlighted = highlightSymbol !== undefined && num === highlightSymbol;
+          const isWrong = wrongSymbol !== undefined && num === wrongSymbol && num !== highlightSymbol;
           return (
             <button
               key={idx}
-              className="absolute flex items-center justify-center cursor-pointer
+              className={`absolute flex items-center justify-center cursor-pointer
                          hover:scale-125 transition-transform duration-150 disabled:opacity-40
-                         select-none p-0 bg-transparent border-none"
+                         select-none p-0 bg-transparent border-none
+                         ${isHighlighted || isWrong ? "z-10" : ""}`}
               style={{
                 top: p.cy - p.size / 2,
                 left: p.cx - p.size / 2,
@@ -214,6 +229,28 @@ const GameComponent = (props: GameProps) => {
               disabled={props.dealACard !== NEED_ANSWER}
               aria-label={`シンボル ${toIcon(num)}`}
             >
+              {isHighlighted && (
+                <div
+                  className="absolute rounded-full border-4 border-danger animate-pulse"
+                  style={{
+                    width: p.size + 12,
+                    height: p.size + 12,
+                    top: -6,
+                    left: -6,
+                  }}
+                />
+              )}
+              {isWrong && (
+                <div
+                  className="absolute rounded-full border-4 border-gray-900"
+                  style={{
+                    width: p.size + 12,
+                    height: p.size + 12,
+                    top: -6,
+                    left: -6,
+                  }}
+                />
+              )}
               {toIcon(num)}
             </button>
           );
@@ -237,8 +274,21 @@ const GameComponent = (props: GameProps) => {
     (s) => s.player_id !== props.player?.id
   );
 
+  // 回答待ち: 場のカード=1つ前、めくったカード=最新
+  // それ以外: めくったカードが場に移動し、次のカード待ち
+  // 回答中 or 結果表示中は両カード維持、カードを引くまで移動しない
+  const isAnswering = (props.dealACard === NEED_ANSWER || showResult) && props.cards && props.cards.length >= 2;
+  const fieldCard = isAnswering
+    ? props.cards![props.cards!.length - 2]
+    : props.cards && props.cards.length >= 1
+      ? props.cards[props.cards.length - 1]
+      : null;
+  const drawnCard = isAnswering
+    ? props.cards![props.cards!.length - 1]
+    : null;
+
   return (
-    <div className="min-h-screen bg-bg p-4">
+    <div className="min-h-screen bg-bg flex flex-col">
       {/* スコアボード（右上固定） */}
       <div className="fixed top-4 right-4 bg-card rounded-2xl shadow-lg p-4 min-w-44 z-10 border border-gray-100">
         <h3 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-3">
@@ -259,119 +309,91 @@ const GameComponent = (props: GameProps) => {
         )}
       </div>
 
-      {/* 回答ダイアログ */}
-      {showDialog && props.answer && props.player && (
-        <>
+      {/* 回答結果テキスト */}
+      {showResult && props.answer && props.player && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-20">
           <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setShowDialog(false)}
-          />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-2xl p-8 min-w-80 text-center border border-gray-100">
-            <button
-              onClick={() => setShowDialog(false)}
-              className="absolute top-3 right-4 text-text-muted hover:text-text text-2xl bg-transparent border-none cursor-pointer"
-              aria-label="閉じる"
-            >
-              &times;
-            </button>
-
-            <div
-              className={`text-2xl font-bold mb-4 ${
-                props.answer.isCorrect ? "text-success" : "text-danger"
-              }`}
-            >
-              {props.answer.playerId === props.player.id
-                ? props.answer.isCorrect
-                  ? "正解！"
-                  : "不正解..."
-                : `プレイヤー ${props.answer.playerId} が${
-                    props.answer.isCorrect ? "正解" : "不正解"
-                  }`}
-            </div>
-
-            <div className="flex justify-center gap-8 mb-6">
-              <div>
-                <div className="text-xs text-text-muted mb-1">正解</div>
-                <div className="text-4xl">
-                  {toIcon(String(props.answer.answer))}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-text-muted mb-1">選択</div>
-                <div className="text-4xl">
-                  {toIcon(String(props.answer.userAnswer))}
-                </div>
-              </div>
-            </div>
-
-            {/* ダイアログ内のカード表示 */}
-            <div className="flex flex-col gap-4 items-center">
-              {props.cards &&
-                props.cards
-                  .slice(-2)
-                  .reverse()
-                  .map((card) => {
-                    const symbolNums = extractSymbolNumbers(card.text);
-                    return (
-                      <div key={card.id} className="flex gap-2 flex-wrap justify-center">
-                        {symbolNums.map((num, sidx) => {
-                          const isCorrect =
-                            String(num) === String(props.answer!.answer);
-                          return (
-                            <div
-                              key={sidx}
-                              className={`rounded-lg px-3 py-1.5 text-lg font-bold ${
-                                isCorrect
-                                  ? "bg-success text-white"
-                                  : "bg-gray-100 text-text"
-                              }`}
-                            >
-                              {toIcon(num)}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-            </div>
+            className={`px-6 py-2 rounded-xl shadow-lg font-bold text-lg text-white ${
+              props.answer.isCorrect ? "bg-success" : "bg-danger"
+            }`}
+          >
+            {props.answer.playerId === props.player.id
+              ? props.answer.isCorrect
+                ? "正解！"
+                : "不正解..."
+              : `プレイヤー ${props.answer.playerId} が${
+                  props.answer.isCorrect ? "正解" : "不正解"
+                }`}
           </div>
-        </>
+        </div>
       )}
 
-      {/* メインエリア */}
-      <div className="flex flex-col items-center pt-8">
+      {/* メインエリア（画面中央に配置） */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        {/* カード表示エリア: 左=場、右=探索対象 */}
+        <div className="flex flex-row items-center justify-center gap-8 md:gap-12 mb-8">
+          {/* 左: 場のカード */}
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-sm font-semibold text-text-muted">場のカード</span>
+            {fieldCard ? (
+              <div className="w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 rounded-full bg-card border-4 border-gray-300 shadow-lg relative overflow-hidden">
+                <SymbolRandomLayout
+                  symbols={extractSymbolNumbers(fieldCard.text)}
+                  cardId={fieldCard.id}
+                  highlightSymbol={showResult && props.answer ? props.answer.answer : undefined}
+                  wrongSymbol={showResult && props.answer && !props.answer.isCorrect ? props.answer.userAnswer : undefined}
+                />
+              </div>
+            ) : (
+              <div className="w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 rounded-full bg-gray-50 border-4 border-dashed border-gray-300 flex items-center justify-center">
+                <span className="text-text-muted text-xs sm:text-sm">カードを引いてください</span>
+              </div>
+            )}
+          </div>
+
+          {/* 右: 探索対象のカード */}
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-sm font-semibold text-primary">探すカード</span>
+            <div className="relative w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-80 lg:h-80">
+              {/* 空枠（常に背面に表示） */}
+              <div className="absolute inset-0 rounded-full bg-gray-50 border-4 border-dashed border-gray-200 flex items-center justify-center">
+                {props.countdown > 0 ? (
+                  <span className="text-6xl font-bold text-primary animate-bounce">
+                    {props.countdown}
+                  </span>
+                ) : (
+                  <span className="text-text-muted text-xs sm:text-sm text-center px-4">
+                    {fieldCard ? "カードを引いてください" : ""}
+                  </span>
+                )}
+              </div>
+              {/* カード本体（スライドアニメーション対象） */}
+              {drawnCard && (
+                <div className={`absolute inset-0 rounded-full bg-card border-4 border-primary/40 shadow-xl overflow-hidden transition-transform duration-500 ease-in-out ${
+                  isMoving ? "-translate-x-[calc(100%+2rem)] md:-translate-x-[calc(100%+3rem)]" : ""
+                }`}>
+                  <SymbolRandomLayout
+                    symbols={extractSymbolNumbers(drawnCard.text)}
+                    cardId={drawnCard.id}
+                    highlightSymbol={showResult && props.answer ? props.answer.answer : undefined}
+                    wrongSymbol={showResult && props.answer && !props.answer.isCorrect ? props.answer.userAnswer : undefined}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* カードを要求するボタン */}
         <button
           onClick={handleReadyClick}
           disabled={props.dealACard !== DEAL_A_CARD}
-          className="mb-8 px-8 py-3 bg-accent text-white font-bold rounded-xl text-lg
+          className="px-10 py-3.5 bg-accent text-white font-bold rounded-xl text-lg
                      hover:brightness-110 transition shadow-lg
                      disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {props.dealACard}
         </button>
-
-        {/* カード表示エリア */}
-        <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
-          {props.cards &&
-            [...props.cards]
-              .reverse()
-              .slice(0, 2)
-              .map((card) => {
-                const symbolNums = extractSymbolNumbers(card.text);
-                return (
-                  <div
-                    key={card.id}
-                    className="w-56 h-56 md:w-64 md:h-64 rounded-full bg-card border-4 border-gray-200 shadow-xl relative overflow-hidden"
-                  >
-                    <SymbolRandomLayout
-                      symbols={symbolNums}
-                      cardId={card.id}
-                    />
-                  </div>
-                );
-              })}
-        </div>
       </div>
     </div>
   );
