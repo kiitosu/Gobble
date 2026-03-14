@@ -1,5 +1,3 @@
-import './App.css'
-
 import Lobby from "./Lobby";
 
 // src/App.tsx
