@@ -199,6 +199,9 @@ const GameComponent = (props: GameProps) => {
       return { placed, rotations };
     }, [symbols, containerSize, rng]);
 
+    // サイズが小さいほどz-indexを高くして前面に配置
+    const maxSize = Math.max(...positions.placed.map(p => p?.size ?? 0));
+
     return (
       <div ref={containerRef} className="relative w-full h-full">
         {symbols.map((num, idx) => {
@@ -206,20 +209,23 @@ const GameComponent = (props: GameProps) => {
           if (!p) return null;
           const isHighlighted = highlightSymbol !== undefined && num === highlightSymbol;
           const isWrong = wrongSymbol !== undefined && num === wrongSymbol && num !== highlightSymbol;
+          const zIndex = isHighlighted || isWrong ? 20 : Math.round((1 - p.size / maxSize) * 10) + 1;
+          // クリック領域は絵文字サイズに合わせて縮小
+          const hitSize = p.size * 0.8;
           return (
             <button
               key={idx}
-              className={`absolute flex items-center justify-center cursor-pointer
+              className="absolute flex items-center justify-center cursor-pointer
                          hover:scale-125 transition-transform duration-150 disabled:opacity-40
-                         select-none p-0 bg-transparent border-none
-                         ${isHighlighted || isWrong ? "z-10" : ""}`}
+                         select-none p-0 bg-transparent border-none"
               style={{
-                top: p.cy - p.size / 2,
-                left: p.cx - p.size / 2,
-                width: p.size,
-                height: p.size,
+                top: p.cy - hitSize / 2,
+                left: p.cx - hitSize / 2,
+                width: hitSize,
+                height: hitSize,
                 fontSize: `${p.size * 0.75}px`,
                 transform: `rotate(${positions.rotations[idx]}deg)`,
+                zIndex,
               }}
               onClick={() =>
                 handleSubmitAnswer(
