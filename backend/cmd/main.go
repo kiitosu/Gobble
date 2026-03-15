@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"connectrpc.com/connect"
 	"github.com/rs/cors"
@@ -279,18 +280,6 @@ func (s *GameServer) StartGame(
 	client := GetDbClient(ctx)
 	defer client.Close()
 
-	player_id := req.Msg.UserId
-	playerIDInt, err := strconv.Atoi(player_id) // str to int
-	if err != nil {
-		log.Printf("invalid player_id: %v", err)
-		return nil, err
-	}
-
-	_, err = client.Player.UpdateOneID(playerIDInt).SetStatus("STARTED").Save(ctx)
-	if err != nil {
-		log.Printf("Failed to update player status: %v", err)
-		return nil, err
-	}
 	gameId := req.Msg.GameId
 	gamaIdInt, err := strconv.Atoi(gameId)
 	if err != nil {
@@ -302,6 +291,15 @@ func (s *GameServer) StartGame(
 	if err != nil {
 		log.Printf("Failed to update game status: %v", err)
 		return nil, err
+	}
+
+	// 全プレイヤーのステータスをSTARTEDに更新
+	_, err = client.Player.Update().
+		Where(player.HasParentWith(g.IDEQ(gamaIdInt))).
+		SetStatus("STARTED").
+		Save(ctx)
+	if err != nil {
+		log.Printf("Failed to update players status: %v", err)
 	}
 
 	totalCards := len(unsentCards[gamaIdInt])
@@ -344,7 +342,7 @@ func (s *GameServer) StartGame(
 
 	res := connect.NewResponse(&gamev1.StartGameResponse{})
 
-	log.Printf("Player %s of game %s is STARTED", player_id, gameId)
+	log.Printf("Game %s is STARTED", gameId)
 
 	return res, nil
 
@@ -364,6 +362,15 @@ func DistributeCard(client *ent.Client, gameId int) {
 	}
 
 	if len(cards) > 0 {
+		// カード送信前にPLAYINGに更新し、次のREADY要求に備える
+		_, err := client.Player.Update().
+			Where(player.HasParentWith(g.IDEQ(gameId))).
+			SetStatus("PLAYING").
+			Save(context.Background())
+		if err != nil {
+			log.Fatalf("failed updating player status")
+		}
+
 		card := cards[0]
 		unsentCards[gameId] = cards[1:]
 		cardMsg := map[string]interface{}{
@@ -373,15 +380,6 @@ func DistributeCard(client *ent.Client, gameId int) {
 		}
 		cb, _ := json.Marshal(cardMsg)
 		broadcastToGame(gameId, cb)
-
-		// カード送信後はPLAYINGとし、次のREADYを待ち受けられるようにする
-		_, err := client.Player.Update().
-			Where(player.HasParentWith(g.IDEQ(gameId))).
-			SetStatus("PLAYING").
-			Save(context.Background())
-		if err != nil {
-			log.Fatalf("failed updating player status")
-		}
 	}
 }
 
@@ -400,6 +398,7 @@ func (s *GameServer) ReportReady(
 	playerIdInt, err := strconv.Atoi(playerId)
 	if err != nil {
 		log.Printf("invalid playerId: %d", playerIdInt)
+		return nil, err
 	}
 
 	parentIDs, err := client.Player.Query().
@@ -407,36 +406,52 @@ func (s *GameServer) ReportReady(
 		Select("player_parent").
 		Ints(ctx)
 	if err != nil {
-		// error handling
+		log.Printf("failed to query parent: %v", err)
+		return nil, err
 	}
 
 	var gameId = 0
 	if len(parentIDs) > 0 {
 		gameId = parentIDs[0]
-		// gameIDが該当プレイヤーのgame_id
 	}
 
-	status := player.StatusREADY
-	_, err = client.Player.UpdateOneID(playerIdInt).SetStatus(status).Save(ctx)
+	// ゲームごとのミューテックスでレースコンディションを防止
+	mu := getGameMutex(gameId)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// 現在のプレイヤーステータスを確認（既にREADYなら重複処理しない）
+	currentPlayer, err := client.Player.Get(ctx, playerIdInt)
 	if err != nil {
-		log.Printf("Failed to update playerId %d to %s", playerIdInt, status)
+		log.Printf("failed to get player: %v", err)
+		return nil, err
+	}
+	if currentPlayer.Status == player.StatusREADY {
+		log.Printf("Player %s is already READY, skipping", playerId)
+		return connect.NewResponse(&gamev1.ReportReadyResponse{}), nil
+	}
+
+	_, err = client.Player.UpdateOneID(playerIdInt).SetStatus(player.StatusREADY).Save(ctx)
+	if err != nil {
+		log.Printf("Failed to update playerId %d to READY", playerIdInt)
+		return nil, err
 	}
 
 	notReadyCount, err := client.Player.Query().
 		Where(
 			player.HasParentWith(g.IDEQ(gameId)),
-			player.StatusNEQ("READY"),
-		).Count(context.Background())
+			player.StatusNEQ(player.StatusREADY),
+		).Count(ctx)
 	if err != nil {
-		// error handling
+		log.Printf("failed to count not-ready players: %v", err)
+		return nil, err
 	}
-	allReady := notReadyCount == 0
 
-	if allReady {
+	if notReadyCount == 0 {
 		DistributeCard(client, gameId)
 	}
 
-	log.Printf("Player %s is READY", playerId)
+	log.Printf("Player %s is READY (notReadyCount=%d)", playerId, notReadyCount)
 	return connect.NewResponse(&gamev1.ReportReadyResponse{}), nil
 }
 
@@ -856,6 +871,19 @@ type Card struct {
 }
 
 var unsentCards = make(map[int][]Card)
+
+// ゲームごとのミューテックス（ReportReady/DistributeCardのレースコンディション防止）
+var gameMutexes = make(map[int]*sync.Mutex)
+var gameMutexLock sync.Mutex
+
+func getGameMutex(gameId int) *sync.Mutex {
+	gameMutexLock.Lock()
+	defer gameMutexLock.Unlock()
+	if gameMutexes[gameId] == nil {
+		gameMutexes[gameId] = &sync.Mutex{}
+	}
+	return gameMutexes[gameId]
+}
 
 /* main */
 func main() {

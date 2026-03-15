@@ -56,13 +56,14 @@ const GameComponent = (props: GameProps) => {
 
   // カード受け取り準備完了通知をする
   const handleReadyClick = async () => {
-    if (props.player) {
+    if (props.player && props.dealACard === DEAL_A_CARD) {
+      // 即座にボタンを無効化（連打防止）
+      props.setDealACard(WAIT_FOR_OTHER_PLAYERS);
       // 移動アニメーション開始
       setIsMoving(true);
       setTimeout(() => {
         setIsMoving(false);
         setShowResult(false);
-        props.setDealACard(WAIT_FOR_OTHER_PLAYERS);
         reportReadyServiceclient.reportReady({
           playerId: String(props.player!.id),
         });
@@ -76,14 +77,15 @@ const GameComponent = (props: GameProps) => {
     card2: Card,
     answer: string
   ) => {
-    if (props.player) {
+    if (props.player && props.dealACard === NEED_ANSWER) {
+      // 即座に回答不可にして連打防止（ANSWEREDイベントでDEAL_A_CARDに戻る）
+      props.setDealACard(WAIT_FOR_OTHER_PLAYERS);
       await submitAnswerServiceClient.submitAnswer({
         playerId: String(props.player.id),
         card1: card1,
         card2: card2,
         answer: answer,
       });
-      props.setDealACard(DEAL_A_CARD);
     }
   };
 
