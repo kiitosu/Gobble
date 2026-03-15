@@ -112,8 +112,14 @@ func (s *GameServer) JoinGame(
 		},
 	})
 
+	totalCards := len(unsentCards[gameIDInt])
+	totalRounds := totalCards - 1
+	if totalRounds < 0 {
+		totalRounds = 0
+	}
 	msg := map[string]interface{}{
-		"event": "JOINED",
+		"event":        "JOINED",
+		"total_rounds": totalRounds,
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToAll(b)
@@ -155,6 +161,14 @@ func (s *GameServer) CreateGame(
 	rand.Shuffle(len(cards), func(i, j int) {
 		cards[i], cards[j] = cards[j], cards[i]
 	})
+
+	// カード枚数制限
+	cardCount := int(req.Msg.CardCount)
+	log.Printf("requested card_count: %d, generated: %d", cardCount, len(cards))
+	if cardCount > 0 && cardCount <= len(cards) {
+		cards = cards[:cardCount]
+	}
+	log.Printf("final card count: %d", len(cards))
 	if err != nil {
 		log.Printf("failed to generate dobble cards: %v", err)
 	} else {
@@ -246,9 +260,15 @@ func (s *GameServer) StartGame(
 		log.Printf("Failed to conv gameId %s", gameId)
 	}
 
+	totalCards := len(unsentCards[gamaIdInt])
+	totalRounds := totalCards - 1
+	if totalRounds < 0 {
+		totalRounds = 0
+	}
 	msg := map[string]interface{}{
-		"event":   "STARTED",
-		"game_id": gamaIdInt,
+		"event":        "STARTED",
+		"game_id":      gamaIdInt,
+		"total_rounds": totalRounds,
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToGame(gamaIdInt, b)

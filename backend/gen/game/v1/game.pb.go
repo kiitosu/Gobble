@@ -94,6 +94,7 @@ type CreateGameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PlayerName    string                 `protobuf:"bytes,1,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`
 	GameName      string                 `protobuf:"bytes,2,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"`
+	CardCount     int32                  `protobuf:"varint,3,opt,name=card_count,json=cardCount,proto3" json:"card_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -140,6 +141,13 @@ func (x *CreateGameRequest) GetGameName() string {
 		return x.GameName
 	}
 	return ""
+}
+
+func (x *CreateGameRequest) GetCardCount() int32 {
+	if x != nil {
+		return x.CardCount
+	}
+	return 0
 }
 
 type CreateGameResponse struct {
@@ -760,11 +768,13 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
 	"\agame_id\x18\x03 \x01(\x05R\x06gameId\x12\x14\n" +
-	"\x05score\x18\x04 \x01(\x05R\x05score\"Q\n" +
+	"\x05score\x18\x04 \x01(\x05R\x05score\"p\n" +
 	"\x11CreateGameRequest\x12\x1f\n" +
 	"\vplayer_name\x18\x01 \x01(\tR\n" +
 	"playerName\x12\x1b\n" +
-	"\tgame_name\x18\x02 \x01(\tR\bgameName\"=\n" +
+	"\tgame_name\x18\x02 \x01(\tR\bgameName\x12\x1d\n" +
+	"\n" +
+	"card_count\x18\x03 \x01(\x05R\tcardCount\"=\n" +
 	"\x12CreateGameResponse\x12'\n" +
 	"\x06player\x18\x01 \x01(\v2\x0f.game.v1.PlayerR\x06player\"\x11\n" +
 	"\x0fGetGamesRequest\".\n" +

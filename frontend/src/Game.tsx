@@ -26,6 +26,8 @@ type GameProps = {
   setDealACard: React.Dispatch<React.SetStateAction<string>>;
   scores: { player_id: number; score: number }[];
   countdown: number;
+  roundResults: { playerId: number; isCorrect: boolean }[];
+  totalRounds: number;
 };
 
 import React, { useState, useEffect } from "react";
@@ -231,7 +233,7 @@ const GameComponent = (props: GameProps) => {
             >
               {isHighlighted && (
                 <div
-                  className="absolute rounded-full border-4 border-danger animate-pulse"
+                  className="absolute rounded-full border-4 border-danger animate-symbol-pop"
                   style={{
                     width: p.size + 12,
                     height: p.size + 12,
@@ -289,26 +291,6 @@ const GameComponent = (props: GameProps) => {
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
-      {/* スコアボード（右上固定） */}
-      <div className="fixed top-4 right-4 bg-card rounded-2xl shadow-lg p-4 min-w-44 z-10 border border-gray-100">
-        <h3 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-3">
-          スコアボード
-        </h3>
-        {myScore !== undefined && (
-          <div className="text-xl font-bold text-primary mb-2">
-            あなた: {myScore}点
-          </div>
-        )}
-        {otherScores.map((s) => (
-          <div key={s.player_id} className="text-sm text-text-muted">
-            プレイヤー {s.player_id}: {s.score}点
-          </div>
-        ))}
-        {props.scores.length === 0 && (
-          <div className="text-sm text-text-muted">スコア情報なし</div>
-        )}
-      </div>
-
       {/* 回答結果テキスト */}
       {showResult && props.answer && props.player && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-20">
@@ -336,7 +318,11 @@ const GameComponent = (props: GameProps) => {
           <div className="flex flex-col items-center gap-2">
             <span className="text-sm font-semibold text-text-muted">場のカード</span>
             {fieldCard ? (
-              <div className="w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 rounded-full bg-card border-4 border-gray-300 shadow-lg relative overflow-hidden">
+              <div className={`w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-80 lg:h-80 rounded-full bg-card border-4 border-gray-300 shadow-lg relative overflow-hidden ${
+                showResult && props.answer
+                  ? props.answer.isCorrect ? "animate-glow" : "animate-shake"
+                  : ""
+              }`}>
                 <SymbolRandomLayout
                   symbols={extractSymbolNumbers(fieldCard.text)}
                   cardId={fieldCard.id}
@@ -371,6 +357,10 @@ const GameComponent = (props: GameProps) => {
               {drawnCard && (
                 <div className={`absolute inset-0 rounded-full bg-card border-4 border-primary/40 shadow-xl overflow-hidden transition-transform duration-500 ease-in-out ${
                   isMoving ? "-translate-x-[calc(100%+2rem)] md:-translate-x-[calc(100%+3rem)]" : ""
+                } ${
+                  showResult && props.answer
+                    ? props.answer.isCorrect ? "animate-glow" : "animate-shake"
+                    : ""
                 }`}>
                   <SymbolRandomLayout
                     symbols={extractSymbolNumbers(drawnCard.text)}
@@ -394,6 +384,74 @@ const GameComponent = (props: GameProps) => {
         >
           {props.dealACard}
         </button>
+
+        {/* スコアボード & 星取り表 */}
+        <div className="mt-6 bg-card rounded-2xl shadow-lg p-4 border border-gray-100 w-full max-w-lg">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wide">
+              スコアボード
+            </h3>
+            {props.roundResults.length > 0 && (
+              <span className="text-xs text-text-muted">
+                第{props.roundResults.length}回{props.totalRounds > 0 ? ` / ${props.totalRounds}回` : ""}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-4 mb-2">
+            {myScore !== undefined && (
+              <div className="text-lg font-bold text-primary">
+                あなた: {myScore}点
+              </div>
+            )}
+            {otherScores.map((s) => (
+              <div key={s.player_id} className="text-sm text-text-muted self-end">
+                P{s.player_id}: {s.score}点
+              </div>
+            ))}
+            {props.scores.length === 0 && (
+              <div className="text-sm text-text-muted">スコア情報なし</div>
+            )}
+          </div>
+
+          {/* 星取り表 */}
+          {props.roundResults.length > 0 && (
+            <div className="pt-2 border-t border-gray-100">
+              {props.scores.map((s) => {
+                const isMe = s.player_id === props.player?.id;
+                const marks = props.roundResults.map((r) => {
+                  if (r.playerId === s.player_id) {
+                    return r.isCorrect ? "○" : "×";
+                  }
+                  if (r.isCorrect) return "-";
+                  return "";
+                }).filter(Boolean);
+                return (
+                  <div key={s.player_id} className="mb-1.5 flex items-center gap-2">
+                    <span className={`text-xs font-semibold min-w-12 ${isMe ? "text-primary" : "text-text-muted"}`}>
+                      {isMe ? "あなた" : `P${s.player_id}`}
+                    </span>
+                    <div className="flex flex-wrap gap-0.5">
+                      {marks.map((mark, i) => (
+                        <span
+                          key={i}
+                          className={`w-5 h-5 flex items-center justify-center text-xs font-bold rounded ${
+                            mark === "○"
+                              ? "bg-success/15 text-success"
+                              : mark === "×"
+                              ? "bg-danger/15 text-danger"
+                              : "bg-gray-100 text-text-muted"
+                          }`}
+                        >
+                          {mark}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

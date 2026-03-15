@@ -37,6 +37,11 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(0);
   const cardsRef = useRef<{ id: number; text: string }[]>([]);
+  const [roundResults, setRoundResults] = useState<
+    { playerId: number; isCorrect: boolean }[]
+  >([]);
+  const [cardCount, setCardCount] = useState<number>(31);
+  const [totalRounds, setTotalRounds] = useState<number>(0);
 
   const transport = useMemo(
     () =>
@@ -83,6 +88,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           if (msg.event === "STARTED" && !started) {
             setStarted(true);
             setGameStatus("STARTED");
+            if (msg.total_rounds) {
+              setTotalRounds(msg.total_rounds);
+            }
           }
 
           if (msg.event === "ANSWERED") {
@@ -93,6 +101,10 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               answer: msg.correct_symbol ?? "",
               userAnswer: String(msg.answer ?? ""),
             });
+            setRoundResults((prev) => [
+              ...prev,
+              { playerId: Number(msg.player_id), isCorrect: msg.is_correct },
+            ]);
             setDealACard(DEAL_A_CARD);
             if (msg.scores) {
               setScores(msg.scores);
@@ -132,6 +144,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
 
           if (msg.event === "JOINED") {
             setGameStatus("READY");
+            if (msg.total_rounds) {
+              setTotalRounds(msg.total_rounds);
+            }
           }
 
           if (msg.event === "GAME_OVER") {
@@ -154,8 +169,12 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   // コンポーネント起動時にゲーム状態を取得
   useEffect(() => {
     const fetchGames = async () => {
-      const response = await getGamesClient.getGames({});
-      setGames(response.games);
+      try {
+        const response = await getGamesClient.getGames({});
+        setGames(response.games);
+      } catch (e) {
+        console.error("ゲーム一覧の取得に失敗:", e);
+      }
     };
     fetchGames();
   }, [getGamesClient, setGames]);
@@ -229,6 +248,8 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           setDealACard={setDealACard}
           scores={scores}
           countdown={countdown}
+          roundResults={roundResults}
+          totalRounds={totalRounds}
         />
       </div>
     );
@@ -251,23 +272,31 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const response = await createGameClient.createGame({
-                gameName: gameName,
-                playerName: gameName,
-              });
-              if (response.player === undefined) return;
-              const p = response.player;
-              setPlayer(p);
-              setGames((prevGames) => [
-                ...prevGames,
-                {
-                  id: p.gameId,
-                  name: gameName,
-                  status: "CREATED",
-                  $typeName: "game.v1.Game",
-                },
-              ]);
-              setGameStatus("CREATED");
+              if (!gameName.trim()) return;
+              try {
+                const response = await createGameClient.createGame({
+                  gameName: gameName,
+                  playerName: gameName,
+                  cardCount: cardCount,
+                });
+                if (response.player === undefined) return;
+                const p = response.player;
+                setPlayer(p);
+                setTotalRounds(cardCount - 1);
+                setGames((prevGames) => [
+                  ...prevGames,
+                  {
+                    id: p.gameId,
+                    name: gameName,
+                    status: "CREATED",
+                    $typeName: "game.v1.Game",
+                  },
+                ]);
+                setGameStatus("CREATED");
+              } catch (err) {
+                console.error("ゲーム作成に失敗:", err);
+                alert("ゲーム作成に失敗しました。バックエンドが起動しているか確認してください。");
+              }
             }}
             className="flex flex-col sm:flex-row gap-3 items-center justify-center mb-10"
           >
@@ -277,6 +306,17 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
               placeholder="プレイヤー名を入力"
               className="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text"
             />
+            <select
+              value={cardCount}
+              onChange={(e) => setCardCount(Number(e.target.value))}
+              className="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text"
+            >
+              <option value={6}>5ラウンド</option>
+              <option value={11}>10ラウンド</option>
+              <option value={16}>15ラウンド</option>
+              <option value={21}>20ラウンド</option>
+              <option value={31}>30ラウンド（フル）</option>
+            </select>
             <button
               type="submit"
               className="px-6 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition shadow-sm"
