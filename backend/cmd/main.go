@@ -96,19 +96,29 @@ func (s *GameServer) JoinGame(
 	}
 	log.Printf("gameIDInt is %d", gameIDInt)
 
-	player, err := client.Player.Create().SetName(player_name).SetParentID(gameIDInt).Save(ctx)
+	// CREATED状態のゲームのみ参加可能
+	gameEnt, err := client.Game.Get(ctx, gameIDInt)
 	if err != nil {
-		log.Printf("failed creating a todo: %v", err)
+		log.Printf("game not found: %v", err)
 		return nil, err
 	}
-	log.Printf("player is %v", player)
+	if gameEnt.Status != g.StatusCREATED {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("開始済みのゲームには参加できません"))
+	}
+
+	newPlayer, err := client.Player.Create().SetName(player_name).SetParentID(gameIDInt).Save(ctx)
+	if err != nil {
+		log.Printf("failed creating player: %v", err)
+		return nil, err
+	}
+	log.Printf("player is %v", newPlayer)
 
 	res := connect.NewResponse(&gamev1.JoinGameResponse{
 		Player: &gamev1.Player{
 			GameId: int32(gameIDInt),
-			Id:     int32(player.ID),
+			Id:     int32(newPlayer.ID),
 			Name:   player_name,
-			Score:  int32(player.Score),
+			Score:  int32(newPlayer.Score),
 		},
 	})
 
@@ -117,12 +127,31 @@ func (s *GameServer) JoinGame(
 	if totalRounds < 0 {
 		totalRounds = 0
 	}
+	// ゲームの全プレイヤー一覧を取得
+	allPlayers, _ := client.Player.Query().
+		Where(player.HasParentWith(g.IDEQ(gameIDInt))).
+		All(ctx)
+	var playerList []map[string]interface{}
+	for _, p := range allPlayers {
+		playerList = append(playerList, map[string]interface{}{
+			"player_id": p.ID,
+			"name":      p.Name,
+			"score":     p.Score,
+		})
+	}
+
 	msg := map[string]interface{}{
 		"event":        "JOINED",
 		"total_rounds": totalRounds,
+		"players":      playerList,
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToAll(b)
+	lobbyMsg := map[string]interface{}{
+		"event": "JOINED",
+	}
+	lb, _ := json.Marshal(lobbyMsg)
+	broadcastToLobby(lb)
 
 	log.Printf("User %s join the game %s", player_name, game_id)
 	return res, nil
@@ -138,58 +167,62 @@ func (s *GameServer) CreateGame(
 	client := GetDbClient(ctx)
 	defer client.Close()
 
-	// レコード追加
+	// 同名のCREATED/STARTEDゲームが存在しないかチェック
 	game_name := req.Msg.GameName
-	game, err := client.Game.Create().SetName(game_name).Save(ctx)
+	exists, err := client.Game.Query().
+		Where(
+			g.NameEQ(game_name),
+			g.StatusIn(g.StatusCREATED, g.StatusSTARTED),
+		).Exist(ctx)
 	if err != nil {
-		log.Printf("failed creating a todo: %v", err)
+		log.Printf("failed checking game name: %v", err)
 		return nil, err
 	}
-	player_name := req.Msg.PlayerName
-	player, err := client.Player.Create().SetName(player_name).SetParent(game).Save(ctx)
-	if err != nil {
-		log.Printf("failed creating a todo: %v", err)
-		return nil, err
+	if exists {
+		return nil, connect.NewError(connect.CodeAlreadyExists, fmt.Errorf("同名のゲームが既に存在します: %s", game_name))
 	}
 
 	// Dobbleカード生成
-	cards, _, err := cardgen.GenerateDobbleCards(5)
+	generatedCards, _, err := cardgen.GenerateDobbleCards(5)
 	if err != nil {
 		log.Fatalf("failed to generate cards: %v", err)
 	}
 
-	rand.Shuffle(len(cards), func(i, j int) {
-		cards[i], cards[j] = cards[j], cards[i]
+	rand.Shuffle(len(generatedCards), func(i, j int) {
+		generatedCards[i], generatedCards[j] = generatedCards[j], generatedCards[i]
 	})
 
 	// カード枚数制限
 	cardCount := int(req.Msg.CardCount)
-	log.Printf("requested card_count: %d, generated: %d", cardCount, len(cards))
-	if cardCount > 0 && cardCount <= len(cards) {
-		cards = cards[:cardCount]
+	log.Printf("requested card_count: %d, generated: %d", cardCount, len(generatedCards))
+	if cardCount > 0 && cardCount <= len(generatedCards) {
+		generatedCards = generatedCards[:cardCount]
 	}
-	log.Printf("final card count: %d", len(cards))
+	totalRounds := len(generatedCards) - 1
+	if totalRounds < 0 {
+		totalRounds = 0
+	}
+	log.Printf("final card count: %d, total rounds: %d", len(generatedCards), totalRounds)
+
+	// レコード追加
+	game, err := client.Game.Create().SetName(game_name).SetTotalRounds(totalRounds).Save(ctx)
 	if err != nil {
-		log.Printf("failed to generate dobble cards: %v", err)
-	} else {
-		var cs []Card
-		for _, c := range cards {
-			cs = append(cs, Card{
-				ID:   c.ID,
-				Text: "symbols: " + fmt.Sprint(c.Symbols),
-			})
-		}
-		log.Printf("%d cards created", len(cs))
-		unsentCards[game.ID] = cs
+		log.Printf("failed creating game: %v", err)
+		return nil, err
 	}
 
+	var cs []Card
+	for _, c := range generatedCards {
+		cs = append(cs, Card{
+			ID:   c.ID,
+			Text: "symbols: " + fmt.Sprint(c.Symbols),
+		})
+	}
+	log.Printf("%d cards created", len(cs))
+	unsentCards[game.ID] = cs
+
 	res := connect.NewResponse(&gamev1.CreateGameResponse{
-		Player: &gamev1.Player{
-			GameId: int32(game.ID),
-			Id:     int32(player.ID),
-			Name:   player_name,
-			Score:  int32(player.Score),
-		},
+		GameId: int32(game.ID),
 	})
 
 	msg := map[string]interface{}{
@@ -197,8 +230,9 @@ func (s *GameServer) CreateGame(
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToAll(b)
+	broadcastToLobby(b)
 
-	log.Printf("Game %s id of %d created by %s.", game_name, game.ID, player_name)
+	log.Printf("Game %s id of %d created.", game_name, game.ID)
 	return res, nil
 }
 
@@ -212,8 +246,8 @@ func (s *GameServer) GetGames(
 	client := GetDbClient(ctx)
 	defer client.Close()
 
-	// データ取得
-	items, err := client.Game.Query().Order(game.ByID(sql.OrderDesc())).All(ctx)
+	// データ取得（最新10件、プレイヤー数も含めて）
+	items, err := client.Game.Query().WithPlayers().Order(game.ByID(sql.OrderDesc())).Limit(10).All(ctx)
 	if err != nil {
 		log.Printf("failed querying games: %v", err)
 		return nil, err
@@ -221,8 +255,11 @@ func (s *GameServer) GetGames(
 	var games []*gamev1.Game
 	for _, t := range items {
 		games = append(games, &gamev1.Game{
-			Id:     int32(t.ID),
-			Status: string(t.Status),
+			Id:          int32(t.ID),
+			Status:      string(t.Status),
+			Name:        t.Name,
+			PlayerCount: int32(len(t.Edges.Players)),
+			TotalRounds: int32(t.TotalRounds),
 		})
 	}
 
@@ -260,18 +297,50 @@ func (s *GameServer) StartGame(
 		log.Printf("Failed to conv gameId %s", gameId)
 	}
 
+	// ゲームのステータスをSTARTEDに更新
+	_, err = client.Game.UpdateOneID(gamaIdInt).SetStatus("STARTED").Save(ctx)
+	if err != nil {
+		log.Printf("Failed to update game status: %v", err)
+		return nil, err
+	}
+
 	totalCards := len(unsentCards[gamaIdInt])
 	totalRounds := totalCards - 1
 	if totalRounds < 0 {
 		totalRounds = 0
 	}
+
+	// プレイヤー一覧を取得
+	players, err := client.Player.Query().
+		Where(player.HasParentWith(g.IDEQ(gamaIdInt))).
+		All(ctx)
+	if err != nil {
+		log.Printf("Failed to query players: %v", err)
+	}
+	var playerList []map[string]interface{}
+	for _, p := range players {
+		playerList = append(playerList, map[string]interface{}{
+			"player_id": p.ID,
+			"name":      p.Name,
+			"score":     p.Score,
+		})
+	}
+
 	msg := map[string]interface{}{
 		"event":        "STARTED",
 		"game_id":      gamaIdInt,
 		"total_rounds": totalRounds,
+		"players":      playerList,
 	}
 	b, _ := json.Marshal(msg)
 	broadcastToGame(gamaIdInt, b)
+
+	// ロビーに通知
+	lobbyMsg := map[string]interface{}{
+		"event": "STARTED",
+	}
+	lb, _ := json.Marshal(lobbyMsg)
+	broadcastToLobby(lb)
 
 	res := connect.NewResponse(&gamev1.StartGameResponse{})
 
@@ -471,6 +540,7 @@ func (s *GameServer) SubmitAnswer(
 						scores = append(scores, map[string]interface{}{
 							"player_id": p.ID,
 							"score":     p.Score,
+							"name":      p.Name,
 						})
 					}
 				}
@@ -496,6 +566,60 @@ func (s *GameServer) SubmitAnswer(
 	})
 
 	return res, nil
+}
+
+func (s *GameServer) DeleteGame(
+	ctx context.Context,
+	req *connect.Request[gamev1.DeleteGameRequest],
+) (*connect.Response[gamev1.DeleteGameResponse], error) {
+	endLog := funcCallLog(logFuncName())
+	defer endLog()
+
+	client := GetDbClient(ctx)
+	defer client.Close()
+
+	gameId := req.Msg.GameId
+	gameIdInt, err := strconv.Atoi(gameId)
+	if err != nil {
+		log.Printf("invalid game_id: %v", err)
+		return nil, err
+	}
+
+	// CREATED状態のゲームのみ削除可能
+	gameEnt, err := client.Game.Get(ctx, gameIdInt)
+	if err != nil {
+		log.Printf("game not found: %v", err)
+		return nil, err
+	}
+	if gameEnt.Status != g.StatusCREATED {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf("開始済みのゲームは削除できません"))
+	}
+
+	// 関連プレイヤーを削除
+	_, err = client.Player.Delete().Where(player.HasParentWith(g.IDEQ(gameIdInt))).Exec(ctx)
+	if err != nil {
+		log.Printf("failed deleting players: %v", err)
+	}
+
+	// ゲームを削除
+	err = client.Game.DeleteOneID(gameIdInt).Exec(ctx)
+	if err != nil {
+		log.Printf("failed deleting game: %v", err)
+		return nil, err
+	}
+
+	// カード情報も削除
+	delete(unsentCards, gameIdInt)
+
+	// ロビーに通知
+	msg := map[string]interface{}{
+		"event": "DELETED",
+	}
+	b, _ := json.Marshal(msg)
+	broadcastToLobby(b)
+
+	log.Printf("Game %d deleted.", gameIdInt)
+	return connect.NewResponse(&gamev1.DeleteGameResponse{}), nil
 }
 
 /* websocket */
@@ -542,13 +666,29 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		PlayerID: initMsg.PlayerID,
 	}
 
-	// クライアント接続直後にDEBUGイベントを送信（デバッグ用途）
-	debugEvent := map[string]interface{}{
-		"event": "DEBUG",
-		"state": "connected",
+	// クライアント接続直後にプレイヤー一覧を全員に送信
+	{
+		ctx := context.Background()
+		client := GetDbClient(ctx)
+		gamePlayers, _ := client.Player.Query().
+			Where(player.HasParentWith(g.IDEQ(initMsg.GameID))).
+			All(ctx)
+		client.Close()
+		var pList []map[string]interface{}
+		for _, p := range gamePlayers {
+			pList = append(pList, map[string]interface{}{
+				"player_id": p.ID,
+				"name":      p.Name,
+				"score":     p.Score,
+			})
+		}
+		playersEvent := map[string]interface{}{
+			"event":   "PLAYERS",
+			"players": pList,
+		}
+		pJSON, _ := json.Marshal(playersEvent)
+		broadcastToGame(initMsg.GameID, pJSON)
 	}
-	debugEventJSON, _ := json.Marshal(debugEvent)
-	broadcastToGame(initMsg.GameID, debugEventJSON)
 
 	log.Printf("gameClients %v", gameClients)
 
@@ -556,28 +696,58 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("websocket disconnected execute defer func")
 		defer conn.Close()
 		delete(gameClients[initMsg.GameID], conn)
-		// 切断通知を同じゲームのクライアントにbroadcast
-		disconnectMsg := map[string]interface{}{
-			"event":     "disconnect",
-			"game_id":   initMsg.GameID,
-			"player_id": initMsg.PlayerID,
-		}
-		b, _ := json.Marshal(disconnectMsg)
-		broadcastToGame(initMsg.GameID, b)
 
-		client := GetDbClient(context.Background())
+		ctx := context.Background()
+		client := GetDbClient(ctx)
 		defer client.Close()
-		_, err := client.Player.Update().
-			Where(player.HasParentWith(g.IDEQ(initMsg.GameID))).
-			SetStatus("FINISHED").
-			Save(context.Background())
+
+		// ゲームの状態を確認
+		gameEnt, err := client.Game.Get(ctx, initMsg.GameID)
 		if err != nil {
-			log.Fatalf("failed updating player status")
+			log.Printf("game %d not found: %v", initMsg.GameID, err)
+			endLog()
+			return
 		}
-		_, err = client.Game.UpdateOneID(initMsg.GameID).SetStatus("FINISHED").Save(context.Background())
-		if err != nil {
-			log.Fatalf("failed updating player status")
+
+		if gameEnt.Status == g.StatusSTARTED {
+			// 実施中のゲーム: FINISHEDにして他プレイヤーに切断通知
+			_, err = client.Game.UpdateOneID(initMsg.GameID).SetStatus("FINISHED").Save(ctx)
+			if err != nil {
+				log.Printf("failed updating game %d to FINISHED: %v", initMsg.GameID, err)
+			}
+			delete(unsentCards, initMsg.GameID)
+
+			disconnectMsg := map[string]interface{}{
+				"event":     "disconnect",
+				"game_id":   initMsg.GameID,
+				"player_id": initMsg.PlayerID,
+			}
+			db, _ := json.Marshal(disconnectMsg)
+			broadcastToGame(initMsg.GameID, db)
+
+			log.Printf("Game %d finished due to disconnect.", initMsg.GameID)
+		} else {
+			// 未開始のゲーム: プレイヤーとゲームを削除
+			_, err = client.Player.Delete().
+				Where(player.HasParentWith(g.IDEQ(initMsg.GameID))).
+				Exec(ctx)
+			if err != nil {
+				log.Printf("failed deleting players for game %d: %v", initMsg.GameID, err)
+			}
+			err = client.Game.DeleteOneID(initMsg.GameID).Exec(ctx)
+			if err != nil {
+				log.Printf("failed deleting game %d: %v", initMsg.GameID, err)
+			}
+			delete(unsentCards, initMsg.GameID)
+			log.Printf("Game %d deleted due to disconnect.", initMsg.GameID)
 		}
+
+		// ロビーに通知
+		lobbyMsg := map[string]interface{}{
+			"event": "DELETED",
+		}
+		lb, _ := json.Marshal(lobbyMsg)
+		broadcastToLobby(lb)
 		endLog()
 	}()
 
@@ -629,6 +799,44 @@ func broadcastToAll(message []byte) {
 			} else {
 				log.Printf("broadcast success: %s", message)
 			}
+		}
+	}
+}
+
+/* lobby websocket */
+var lobbyClients = make(map[*websocket.Conn]bool)
+
+func lobbyWebsocketHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("Lobby WS upgrade error:", err)
+		return
+	}
+	lobbyClients[conn] = true
+	log.Printf("Lobby client connected. Total: %d", len(lobbyClients))
+
+	defer func() {
+		delete(lobbyClients, conn)
+		conn.Close()
+		log.Printf("Lobby client disconnected. Total: %d", len(lobbyClients))
+	}()
+
+	// 接続維持（クライアントからの切断を検知）
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+	}
+}
+
+func broadcastToLobby(message []byte) {
+	for conn := range lobbyClients {
+		err := conn.WriteMessage(websocket.TextMessage, message)
+		if err != nil {
+			log.Printf("lobby broadcast error: %v", err)
+			conn.Close()
+			delete(lobbyClients, conn)
 		}
 	}
 }
@@ -690,9 +898,11 @@ func main() {
 	mux.Handle(gamev1connect.NewSubmitAnswerServiceHandler(game))
 	mux.Handle(gamev1connect.NewStartGameServiceHandler(game))
 	mux.Handle(gamev1connect.NewReportReadyServiceHandler(game))
+	mux.Handle(gamev1connect.NewDeleteGameServiceHandler(game))
 
 	// WebSocketハンドラの登録
 	mux.HandleFunc("/ws", websocketHandler)
+	mux.HandleFunc("/ws/lobby", lobbyWebsocketHandler)
 
 	// httpサーバーを起動
 	http.ListenAndServe(

@@ -20,6 +20,8 @@ type Game struct {
 	Name string `json:"name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status game.Status `json:"status,omitempty"`
+	// TotalRounds holds the value of the "total_rounds" field.
+	TotalRounds int `json:"total_rounds,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GameQuery when eager-loading is set.
 	Edges        GameEdges `json:"edges"`
@@ -49,7 +51,7 @@ func (*Game) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case game.FieldID:
+		case game.FieldID, game.FieldTotalRounds:
 			values[i] = new(sql.NullInt64)
 		case game.FieldName, game.FieldStatus:
 			values[i] = new(sql.NullString)
@@ -85,6 +87,12 @@ func (ga *Game) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				ga.Status = game.Status(value.String)
+			}
+		case game.FieldTotalRounds:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field total_rounds", values[i])
+			} else if value.Valid {
+				ga.TotalRounds = int(value.Int64)
 			}
 		default:
 			ga.selectValues.Set(columns[i], values[i])
@@ -132,6 +140,9 @@ func (ga *Game) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", ga.Status))
+	builder.WriteString(", ")
+	builder.WriteString("total_rounds=")
+	builder.WriteString(fmt.Sprintf("%v", ga.TotalRounds))
 	builder.WriteByte(')')
 	return builder.String()
 }

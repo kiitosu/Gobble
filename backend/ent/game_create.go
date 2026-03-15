@@ -40,6 +40,20 @@ func (gc *GameCreate) SetNillableStatus(ga *game.Status) *GameCreate {
 	return gc
 }
 
+// SetTotalRounds sets the "total_rounds" field.
+func (gc *GameCreate) SetTotalRounds(i int) *GameCreate {
+	gc.mutation.SetTotalRounds(i)
+	return gc
+}
+
+// SetNillableTotalRounds sets the "total_rounds" field if the given value is not nil.
+func (gc *GameCreate) SetNillableTotalRounds(i *int) *GameCreate {
+	if i != nil {
+		gc.SetTotalRounds(*i)
+	}
+	return gc
+}
+
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
 func (gc *GameCreate) AddPlayerIDs(ids ...int) *GameCreate {
 	gc.mutation.AddPlayerIDs(ids...)
@@ -94,6 +108,10 @@ func (gc *GameCreate) defaults() {
 		v := game.DefaultStatus
 		gc.mutation.SetStatus(v)
 	}
+	if _, ok := gc.mutation.TotalRounds(); !ok {
+		v := game.DefaultTotalRounds
+		gc.mutation.SetTotalRounds(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -113,6 +131,9 @@ func (gc *GameCreate) check() error {
 		if err := game.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Game.status": %w`, err)}
 		}
+	}
+	if _, ok := gc.mutation.TotalRounds(); !ok {
+		return &ValidationError{Name: "total_rounds", err: errors.New(`ent: missing required field "Game.total_rounds"`)}
 	}
 	return nil
 }
@@ -147,6 +168,10 @@ func (gc *GameCreate) createSpec() (*Game, *sqlgraph.CreateSpec) {
 	if value, ok := gc.mutation.Status(); ok {
 		_spec.SetField(game.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := gc.mutation.TotalRounds(); ok {
+		_spec.SetField(game.FieldTotalRounds, field.TypeInt, value)
+		_node.TotalRounds = value
 	}
 	if nodes := gc.mutation.PlayersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -23,6 +23,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"CREATED", "STARTED", "FINISHED"}, Default: "CREATED"},
+		{Name: "total_rounds", Type: field.TypeInt, Default: 0},
 	}
 	// GamesTable holds the schema information for the "games" table.
 	GamesTable = &schema.Table{

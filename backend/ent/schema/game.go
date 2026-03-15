@@ -21,6 +21,8 @@ func (Game) Fields() []ent.Field {
 		field.Enum("status").
 			Values("CREATED", "STARTED", "FINISHED").
 			Default("CREATED"),
+		field.Int("total_rounds").
+			Default(0),
 	}
 }
 

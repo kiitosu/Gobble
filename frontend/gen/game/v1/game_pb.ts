@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file game/v1/game.proto.
  */
 export const file_game_v1_game: GenFile = /*@__PURE__*/
-  fileDesc("ChJnYW1lL3YxL2dhbWUucHJvdG8SB2dhbWUudjEiQgoGUGxheWVyEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSDwoHZ2FtZV9pZBgDIAEoBRINCgVzY29yZRgEIAEoBSJPChFDcmVhdGVHYW1lUmVxdWVzdBITCgtwbGF5ZXJfbmFtZRgBIAEoCRIRCglnYW1lX25hbWUYAiABKAkSEgoKY2FyZF9jb3VudBgDIAEoBSI1ChJDcmVhdGVHYW1lUmVzcG9uc2USHwoGcGxheWVyGAEgASgLMg8uZ2FtZS52MS5QbGF5ZXIiEQoPR2V0R2FtZXNSZXF1ZXN0IiIKBEdhbWUSCgoCaWQYASABKAUSDgoGc3RhdHVzGAIgASgJIjAKEEdldEdhbWVzUmVzcG9uc2USHAoFZ2FtZXMYASADKAsyDS5nYW1lLnYxLkdhbWUiNwoPSm9pbkdhbWVSZXF1ZXN0EhMKC3BsYXllcl9uYW1lGAEgASgJEg8KB2dhbWVfaWQYAiABKAkiMwoQSm9pbkdhbWVSZXNwb25zZRIfCgZwbGF5ZXIYASABKAsyDy5nYW1lLnYxLlBsYXllciI0ChBTdGFydEdhbWVSZXF1ZXN0Eg8KB2dhbWVfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSITChFTdGFydEdhbWVSZXNwb25zZSInChJSZXBvcnRSZWFkeVJlcXVlc3QSEQoJcGxheWVyX2lkGAEgASgJIhUKE1JlcG9ydFJlYWR5UmVzcG9uc2UiIAoEQ2FyZBIKCgJpZBgBIAEoBRIMCgR0ZXh0GAIgASgJInQKE1N1Ym1pdEFuc3dlclJlcXVlc3QSEQoJcGxheWVyX2lkGAEgASgJEhwKBWNhcmQxGAIgASgLMg0uZ2FtZS52MS5DYXJkEhwKBWNhcmQyGAMgASgLMg0uZ2FtZS52MS5DYXJkEg4KBmFuc3dlchgEIAEoCSIqChRTdWJtaXRBbnN3ZXJSZXNwb25zZRISCgppc19jb3JyZWN0GAEgASgJMlwKEUNyZWF0ZUdhbWVTZXJ2aWNlEkcKCkNyZWF0ZUdhbWUSGi5nYW1lLnYxLkNyZWF0ZUdhbWVSZXF1ZXN0GhsuZ2FtZS52MS5DcmVhdGVHYW1lUmVzcG9uc2UiADJUCg9HZXRHYW1lc1NlcnZpY2USQQoIR2V0R2FtZXMSGC5nYW1lLnYxLkdldEdhbWVzUmVxdWVzdBoZLmdhbWUudjEuR2V0R2FtZXNSZXNwb25zZSIAMlQKD0pvaW5HYW1lU2VydmljZRJBCghKb2luR2FtZRIYLmdhbWUudjEuSm9pbkdhbWVSZXF1ZXN0GhkuZ2FtZS52MS5Kb2luR2FtZVJlc3BvbnNlIgAyWAoQU3RhcnRHYW1lU2VydmljZRJECglTdGFydEdhbWUSGS5nYW1lLnYxLlN0YXJ0R2FtZVJlcXVlc3QaGi5nYW1lLnYxLlN0YXJ0R2FtZVJlc3BvbnNlIgAyYAoSUmVwb3J0UmVhZHlTZXJ2aWNlEkoKC1JlcG9ydFJlYWR5EhsuZ2FtZS52MS5SZXBvcnRSZWFkeVJlcXVlc3QaHC5nYW1lLnYxLlJlcG9ydFJlYWR5UmVzcG9uc2UiADJkChNTdWJtaXRBbnN3ZXJTZXJ2aWNlEk0KDFN1Ym1pdEFuc3dlchIcLmdhbWUudjEuU3VibWl0QW5zd2VyUmVxdWVzdBodLmdhbWUudjEuU3VibWl0QW5zd2VyUmVzcG9uc2UiAEIcWhpleGFtcGxlL2dlbi9nYW1lL3YxO2dhbWV2MWIGcHJvdG8z");
+  fileDesc("ChJnYW1lL3YxL2dhbWUucHJvdG8SB2dhbWUudjEiQgoGUGxheWVyEgoKAmlkGAEgASgFEgwKBG5hbWUYAiABKAkSDwoHZ2FtZV9pZBgDIAEoBRINCgVzY29yZRgEIAEoBSI6ChFDcmVhdGVHYW1lUmVxdWVzdBIRCglnYW1lX25hbWUYASABKAkSEgoKY2FyZF9jb3VudBgCIAEoBSIlChJDcmVhdGVHYW1lUmVzcG9uc2USDwoHZ2FtZV9pZBgBIAEoBSIRCg9HZXRHYW1lc1JlcXVlc3QiXAoER2FtZRIKCgJpZBgBIAEoBRIOCgZzdGF0dXMYAiABKAkSDAoEbmFtZRgDIAEoCRIUCgxwbGF5ZXJfY291bnQYBCABKAUSFAoMdG90YWxfcm91bmRzGAUgASgFIjAKEEdldEdhbWVzUmVzcG9uc2USHAoFZ2FtZXMYASADKAsyDS5nYW1lLnYxLkdhbWUiNwoPSm9pbkdhbWVSZXF1ZXN0EhMKC3BsYXllcl9uYW1lGAEgASgJEg8KB2dhbWVfaWQYAiABKAkiMwoQSm9pbkdhbWVSZXNwb25zZRIfCgZwbGF5ZXIYASABKAsyDy5nYW1lLnYxLlBsYXllciI0ChBTdGFydEdhbWVSZXF1ZXN0Eg8KB2dhbWVfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSITChFTdGFydEdhbWVSZXNwb25zZSInChJSZXBvcnRSZWFkeVJlcXVlc3QSEQoJcGxheWVyX2lkGAEgASgJIhUKE1JlcG9ydFJlYWR5UmVzcG9uc2UiIAoEQ2FyZBIKCgJpZBgBIAEoBRIMCgR0ZXh0GAIgASgJInQKE1N1Ym1pdEFuc3dlclJlcXVlc3QSEQoJcGxheWVyX2lkGAEgASgJEhwKBWNhcmQxGAIgASgLMg0uZ2FtZS52MS5DYXJkEhwKBWNhcmQyGAMgASgLMg0uZ2FtZS52MS5DYXJkEg4KBmFuc3dlchgEIAEoCSIqChRTdWJtaXRBbnN3ZXJSZXNwb25zZRISCgppc19jb3JyZWN0GAEgASgJIiQKEURlbGV0ZUdhbWVSZXF1ZXN0Eg8KB2dhbWVfaWQYASABKAkiFAoSRGVsZXRlR2FtZVJlc3BvbnNlMlwKEUNyZWF0ZUdhbWVTZXJ2aWNlEkcKCkNyZWF0ZUdhbWUSGi5nYW1lLnYxLkNyZWF0ZUdhbWVSZXF1ZXN0GhsuZ2FtZS52MS5DcmVhdGVHYW1lUmVzcG9uc2UiADJUCg9HZXRHYW1lc1NlcnZpY2USQQoIR2V0R2FtZXMSGC5nYW1lLnYxLkdldEdhbWVzUmVxdWVzdBoZLmdhbWUudjEuR2V0R2FtZXNSZXNwb25zZSIAMlQKD0pvaW5HYW1lU2VydmljZRJBCghKb2luR2FtZRIYLmdhbWUudjEuSm9pbkdhbWVSZXF1ZXN0GhkuZ2FtZS52MS5Kb2luR2FtZVJlc3BvbnNlIgAyWAoQU3RhcnRHYW1lU2VydmljZRJECglTdGFydEdhbWUSGS5nYW1lLnYxLlN0YXJ0R2FtZVJlcXVlc3QaGi5nYW1lLnYxLlN0YXJ0R2FtZVJlc3BvbnNlIgAyYAoSUmVwb3J0UmVhZHlTZXJ2aWNlEkoKC1JlcG9ydFJlYWR5EhsuZ2FtZS52MS5SZXBvcnRSZWFkeVJlcXVlc3QaHC5nYW1lLnYxLlJlcG9ydFJlYWR5UmVzcG9uc2UiADJkChNTdWJtaXRBbnN3ZXJTZXJ2aWNlEk0KDFN1Ym1pdEFuc3dlchIcLmdhbWUudjEuU3VibWl0QW5zd2VyUmVxdWVzdBodLmdhbWUudjEuU3VibWl0QW5zd2VyUmVzcG9uc2UiADJcChFEZWxldGVHYW1lU2VydmljZRJHCgpEZWxldGVHYW1lEhouZ2FtZS52MS5EZWxldGVHYW1lUmVxdWVzdBobLmdhbWUudjEuRGVsZXRlR2FtZVJlc3BvbnNlIgBCHFoaZXhhbXBsZS9nZW4vZ2FtZS92MTtnYW1ldjFiBnByb3RvMw");
 
 /**
  * Create game 
@@ -53,17 +53,12 @@ export const PlayerSchema: GenMessage<Player> = /*@__PURE__*/
  */
 export type CreateGameRequest = Message<"game.v1.CreateGameRequest"> & {
   /**
-   * @generated from field: string player_name = 1;
-   */
-  playerName: string;
-
-  /**
-   * @generated from field: string game_name = 2;
+   * @generated from field: string game_name = 1;
    */
   gameName: string;
 
   /**
-   * @generated from field: int32 card_count = 3;
+   * @generated from field: int32 card_count = 2;
    */
   cardCount: number;
 };
@@ -80,9 +75,9 @@ export const CreateGameRequestSchema: GenMessage<CreateGameRequest> = /*@__PURE_
  */
 export type CreateGameResponse = Message<"game.v1.CreateGameResponse"> & {
   /**
-   * @generated from field: game.v1.Player player = 1;
+   * @generated from field: int32 game_id = 1;
    */
-  player?: Player;
+  gameId: number;
 };
 
 /**
@@ -120,6 +115,21 @@ export type Game = Message<"game.v1.Game"> & {
    * @generated from field: string status = 2;
    */
   status: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * @generated from field: int32 player_count = 4;
+   */
+  playerCount: number;
+
+  /**
+   * @generated from field: int32 total_rounds = 5;
+   */
+  totalRounds: number;
 };
 
 /**
@@ -330,6 +340,38 @@ export const SubmitAnswerResponseSchema: GenMessage<SubmitAnswerResponse> = /*@_
   messageDesc(file_game_v1_game, 14);
 
 /**
+ * Delete game 
+ *
+ * @generated from message game.v1.DeleteGameRequest
+ */
+export type DeleteGameRequest = Message<"game.v1.DeleteGameRequest"> & {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId: string;
+};
+
+/**
+ * Describes the message game.v1.DeleteGameRequest.
+ * Use `create(DeleteGameRequestSchema)` to create a new message.
+ */
+export const DeleteGameRequestSchema: GenMessage<DeleteGameRequest> = /*@__PURE__*/
+  messageDesc(file_game_v1_game, 15);
+
+/**
+ * @generated from message game.v1.DeleteGameResponse
+ */
+export type DeleteGameResponse = Message<"game.v1.DeleteGameResponse"> & {
+};
+
+/**
+ * Describes the message game.v1.DeleteGameResponse.
+ * Use `create(DeleteGameResponseSchema)` to create a new message.
+ */
+export const DeleteGameResponseSchema: GenMessage<DeleteGameResponse> = /*@__PURE__*/
+  messageDesc(file_game_v1_game, 16);
+
+/**
  * @generated from service game.v1.CreateGameService
  */
 export const CreateGameService: GenService<{
@@ -418,4 +460,19 @@ export const SubmitAnswerService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_game_v1_game, 5);
+
+/**
+ * @generated from service game.v1.DeleteGameService
+ */
+export const DeleteGameService: GenService<{
+  /**
+   * @generated from rpc game.v1.DeleteGameService.DeleteGame
+   */
+  deleteGame: {
+    methodKind: "unary";
+    input: typeof DeleteGameRequestSchema;
+    output: typeof DeleteGameResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_game_v1_game, 6);
 

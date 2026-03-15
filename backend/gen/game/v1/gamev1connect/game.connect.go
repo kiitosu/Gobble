@@ -33,6 +33,8 @@ const (
 	ReportReadyServiceName = "game.v1.ReportReadyService"
 	// SubmitAnswerServiceName is the fully-qualified name of the SubmitAnswerService service.
 	SubmitAnswerServiceName = "game.v1.SubmitAnswerService"
+	// DeleteGameServiceName is the fully-qualified name of the DeleteGameService service.
+	DeleteGameServiceName = "game.v1.DeleteGameService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -61,6 +63,9 @@ const (
 	// SubmitAnswerServiceSubmitAnswerProcedure is the fully-qualified name of the SubmitAnswerService's
 	// SubmitAnswer RPC.
 	SubmitAnswerServiceSubmitAnswerProcedure = "/game.v1.SubmitAnswerService/SubmitAnswer"
+	// DeleteGameServiceDeleteGameProcedure is the fully-qualified name of the DeleteGameService's
+	// DeleteGame RPC.
+	DeleteGameServiceDeleteGameProcedure = "/game.v1.DeleteGameService/DeleteGame"
 )
 
 // CreateGameServiceClient is a client for the game.v1.CreateGameService service.
@@ -481,4 +486,74 @@ type UnimplementedSubmitAnswerServiceHandler struct{}
 
 func (UnimplementedSubmitAnswerServiceHandler) SubmitAnswer(context.Context, *connect.Request[v1.SubmitAnswerRequest]) (*connect.Response[v1.SubmitAnswerResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("game.v1.SubmitAnswerService.SubmitAnswer is not implemented"))
+}
+
+// DeleteGameServiceClient is a client for the game.v1.DeleteGameService service.
+type DeleteGameServiceClient interface {
+	DeleteGame(context.Context, *connect.Request[v1.DeleteGameRequest]) (*connect.Response[v1.DeleteGameResponse], error)
+}
+
+// NewDeleteGameServiceClient constructs a client for the game.v1.DeleteGameService service. By
+// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
+// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
+// connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewDeleteGameServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DeleteGameServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	deleteGameServiceMethods := v1.File_game_v1_game_proto.Services().ByName("DeleteGameService").Methods()
+	return &deleteGameServiceClient{
+		deleteGame: connect.NewClient[v1.DeleteGameRequest, v1.DeleteGameResponse](
+			httpClient,
+			baseURL+DeleteGameServiceDeleteGameProcedure,
+			connect.WithSchema(deleteGameServiceMethods.ByName("DeleteGame")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// deleteGameServiceClient implements DeleteGameServiceClient.
+type deleteGameServiceClient struct {
+	deleteGame *connect.Client[v1.DeleteGameRequest, v1.DeleteGameResponse]
+}
+
+// DeleteGame calls game.v1.DeleteGameService.DeleteGame.
+func (c *deleteGameServiceClient) DeleteGame(ctx context.Context, req *connect.Request[v1.DeleteGameRequest]) (*connect.Response[v1.DeleteGameResponse], error) {
+	return c.deleteGame.CallUnary(ctx, req)
+}
+
+// DeleteGameServiceHandler is an implementation of the game.v1.DeleteGameService service.
+type DeleteGameServiceHandler interface {
+	DeleteGame(context.Context, *connect.Request[v1.DeleteGameRequest]) (*connect.Response[v1.DeleteGameResponse], error)
+}
+
+// NewDeleteGameServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewDeleteGameServiceHandler(svc DeleteGameServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	deleteGameServiceMethods := v1.File_game_v1_game_proto.Services().ByName("DeleteGameService").Methods()
+	deleteGameServiceDeleteGameHandler := connect.NewUnaryHandler(
+		DeleteGameServiceDeleteGameProcedure,
+		svc.DeleteGame,
+		connect.WithSchema(deleteGameServiceMethods.ByName("DeleteGame")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/game.v1.DeleteGameService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case DeleteGameServiceDeleteGameProcedure:
+			deleteGameServiceDeleteGameHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedDeleteGameServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedDeleteGameServiceHandler struct{}
+
+func (UnimplementedDeleteGameServiceHandler) DeleteGame(context.Context, *connect.Request[v1.DeleteGameRequest]) (*connect.Response[v1.DeleteGameResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("game.v1.DeleteGameService.DeleteGame is not implemented"))
 }

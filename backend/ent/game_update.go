@@ -56,6 +56,27 @@ func (gu *GameUpdate) SetNillableStatus(ga *game.Status) *GameUpdate {
 	return gu
 }
 
+// SetTotalRounds sets the "total_rounds" field.
+func (gu *GameUpdate) SetTotalRounds(i int) *GameUpdate {
+	gu.mutation.ResetTotalRounds()
+	gu.mutation.SetTotalRounds(i)
+	return gu
+}
+
+// SetNillableTotalRounds sets the "total_rounds" field if the given value is not nil.
+func (gu *GameUpdate) SetNillableTotalRounds(i *int) *GameUpdate {
+	if i != nil {
+		gu.SetTotalRounds(*i)
+	}
+	return gu
+}
+
+// AddTotalRounds adds i to the "total_rounds" field.
+func (gu *GameUpdate) AddTotalRounds(i int) *GameUpdate {
+	gu.mutation.AddTotalRounds(i)
+	return gu
+}
+
 // AddPlayerIDs adds the "players" edge to the Player entity by IDs.
 func (gu *GameUpdate) AddPlayerIDs(ids ...int) *GameUpdate {
 	gu.mutation.AddPlayerIDs(ids...)
@@ -157,6 +178,12 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gu.mutation.Status(); ok {
 		_spec.SetField(game.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := gu.mutation.TotalRounds(); ok {
+		_spec.SetField(game.FieldTotalRounds, field.TypeInt, value)
+	}
+	if value, ok := gu.mutation.AddedTotalRounds(); ok {
+		_spec.AddField(game.FieldTotalRounds, field.TypeInt, value)
+	}
 	if gu.mutation.PlayersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -247,6 +274,27 @@ func (guo *GameUpdateOne) SetNillableStatus(ga *game.Status) *GameUpdateOne {
 	if ga != nil {
 		guo.SetStatus(*ga)
 	}
+	return guo
+}
+
+// SetTotalRounds sets the "total_rounds" field.
+func (guo *GameUpdateOne) SetTotalRounds(i int) *GameUpdateOne {
+	guo.mutation.ResetTotalRounds()
+	guo.mutation.SetTotalRounds(i)
+	return guo
+}
+
+// SetNillableTotalRounds sets the "total_rounds" field if the given value is not nil.
+func (guo *GameUpdateOne) SetNillableTotalRounds(i *int) *GameUpdateOne {
+	if i != nil {
+		guo.SetTotalRounds(*i)
+	}
+	return guo
+}
+
+// AddTotalRounds adds i to the "total_rounds" field.
+func (guo *GameUpdateOne) AddTotalRounds(i int) *GameUpdateOne {
+	guo.mutation.AddTotalRounds(i)
 	return guo
 }
 
@@ -380,6 +428,12 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 	}
 	if value, ok := guo.mutation.Status(); ok {
 		_spec.SetField(game.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := guo.mutation.TotalRounds(); ok {
+		_spec.SetField(game.FieldTotalRounds, field.TypeInt, value)
+	}
+	if value, ok := guo.mutation.AddedTotalRounds(); ok {
+		_spec.AddField(game.FieldTotalRounds, field.TypeInt, value)
 	}
 	if guo.mutation.PlayersCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -92,9 +92,8 @@ func (x *Player) GetScore() int32 {
 
 type CreateGameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PlayerName    string                 `protobuf:"bytes,1,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`
-	GameName      string                 `protobuf:"bytes,2,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"`
-	CardCount     int32                  `protobuf:"varint,3,opt,name=card_count,json=cardCount,proto3" json:"card_count,omitempty"`
+	GameName      string                 `protobuf:"bytes,1,opt,name=game_name,json=gameName,proto3" json:"game_name,omitempty"`
+	CardCount     int32                  `protobuf:"varint,2,opt,name=card_count,json=cardCount,proto3" json:"card_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -129,13 +128,6 @@ func (*CreateGameRequest) Descriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *CreateGameRequest) GetPlayerName() string {
-	if x != nil {
-		return x.PlayerName
-	}
-	return ""
-}
-
 func (x *CreateGameRequest) GetGameName() string {
 	if x != nil {
 		return x.GameName
@@ -152,7 +144,7 @@ func (x *CreateGameRequest) GetCardCount() int32 {
 
 type CreateGameResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Player        *Player                `protobuf:"bytes,1,opt,name=player,proto3" json:"player,omitempty"`
+	GameId        int32                  `protobuf:"varint,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -187,11 +179,11 @@ func (*CreateGameResponse) Descriptor() ([]byte, []int) {
 	return file_game_v1_game_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CreateGameResponse) GetPlayer() *Player {
+func (x *CreateGameResponse) GetGameId() int32 {
 	if x != nil {
-		return x.Player
+		return x.GameId
 	}
-	return nil
+	return 0
 }
 
 // Get games
@@ -235,6 +227,9 @@ type Game struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	PlayerCount   int32                  `protobuf:"varint,4,opt,name=player_count,json=playerCount,proto3" json:"player_count,omitempty"`
+	TotalRounds   int32                  `protobuf:"varint,5,opt,name=total_rounds,json=totalRounds,proto3" json:"total_rounds,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -281,6 +276,27 @@ func (x *Game) GetStatus() string {
 		return x.Status
 	}
 	return ""
+}
+
+func (x *Game) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Game) GetPlayerCount() int32 {
+	if x != nil {
+		return x.PlayerCount
+	}
+	return 0
+}
+
+func (x *Game) GetTotalRounds() int32 {
+	if x != nil {
+		return x.TotalRounds
+	}
+	return 0
 }
 
 type GetGamesResponse struct {
@@ -759,6 +775,87 @@ func (x *SubmitAnswerResponse) GetIsCorrect() string {
 	return ""
 }
 
+// Delete game
+type DeleteGameRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        string                 `protobuf:"bytes,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGameRequest) Reset() {
+	*x = DeleteGameRequest{}
+	mi := &file_game_v1_game_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGameRequest) ProtoMessage() {}
+
+func (x *DeleteGameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_game_v1_game_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGameRequest.ProtoReflect.Descriptor instead.
+func (*DeleteGameRequest) Descriptor() ([]byte, []int) {
+	return file_game_v1_game_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DeleteGameRequest) GetGameId() string {
+	if x != nil {
+		return x.GameId
+	}
+	return ""
+}
+
+type DeleteGameResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGameResponse) Reset() {
+	*x = DeleteGameResponse{}
+	mi := &file_game_v1_game_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGameResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGameResponse) ProtoMessage() {}
+
+func (x *DeleteGameResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_game_v1_game_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGameResponse.ProtoReflect.Descriptor instead.
+func (*DeleteGameResponse) Descriptor() ([]byte, []int) {
+	return file_game_v1_game_proto_rawDescGZIP(), []int{16}
+}
+
 var File_game_v1_game_proto protoreflect.FileDescriptor
 
 const file_game_v1_game_proto_rawDesc = "" +
@@ -768,19 +865,20 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
 	"\agame_id\x18\x03 \x01(\x05R\x06gameId\x12\x14\n" +
-	"\x05score\x18\x04 \x01(\x05R\x05score\"p\n" +
-	"\x11CreateGameRequest\x12\x1f\n" +
-	"\vplayer_name\x18\x01 \x01(\tR\n" +
-	"playerName\x12\x1b\n" +
-	"\tgame_name\x18\x02 \x01(\tR\bgameName\x12\x1d\n" +
+	"\x05score\x18\x04 \x01(\x05R\x05score\"O\n" +
+	"\x11CreateGameRequest\x12\x1b\n" +
+	"\tgame_name\x18\x01 \x01(\tR\bgameName\x12\x1d\n" +
 	"\n" +
-	"card_count\x18\x03 \x01(\x05R\tcardCount\"=\n" +
-	"\x12CreateGameResponse\x12'\n" +
-	"\x06player\x18\x01 \x01(\v2\x0f.game.v1.PlayerR\x06player\"\x11\n" +
-	"\x0fGetGamesRequest\".\n" +
+	"card_count\x18\x02 \x01(\x05R\tcardCount\"-\n" +
+	"\x12CreateGameResponse\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\x05R\x06gameId\"\x11\n" +
+	"\x0fGetGamesRequest\"\x88\x01\n" +
 	"\x04Game\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"7\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12!\n" +
+	"\fplayer_count\x18\x04 \x01(\x05R\vplayerCount\x12!\n" +
+	"\ftotal_rounds\x18\x05 \x01(\x05R\vtotalRounds\"7\n" +
 	"\x10GetGamesResponse\x12#\n" +
 	"\x05games\x18\x01 \x03(\v2\r.game.v1.GameR\x05games\"K\n" +
 	"\x0fJoinGameRequest\x12\x1f\n" +
@@ -806,7 +904,10 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x06answer\x18\x04 \x01(\tR\x06answer\"5\n" +
 	"\x14SubmitAnswerResponse\x12\x1d\n" +
 	"\n" +
-	"is_correct\x18\x01 \x01(\tR\tisCorrect2\\\n" +
+	"is_correct\x18\x01 \x01(\tR\tisCorrect\",\n" +
+	"\x11DeleteGameRequest\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\tR\x06gameId\"\x14\n" +
+	"\x12DeleteGameResponse2\\\n" +
 	"\x11CreateGameService\x12G\n" +
 	"\n" +
 	"CreateGame\x12\x1a.game.v1.CreateGameRequest\x1a\x1b.game.v1.CreateGameResponse\"\x002T\n" +
@@ -819,7 +920,10 @@ const file_game_v1_game_proto_rawDesc = "" +
 	"\x12ReportReadyService\x12J\n" +
 	"\vReportReady\x12\x1b.game.v1.ReportReadyRequest\x1a\x1c.game.v1.ReportReadyResponse\"\x002d\n" +
 	"\x13SubmitAnswerService\x12M\n" +
-	"\fSubmitAnswer\x12\x1c.game.v1.SubmitAnswerRequest\x1a\x1d.game.v1.SubmitAnswerResponse\"\x00B\x1cZ\x1aexample/gen/game/v1;gamev1b\x06proto3"
+	"\fSubmitAnswer\x12\x1c.game.v1.SubmitAnswerRequest\x1a\x1d.game.v1.SubmitAnswerResponse\"\x002\\\n" +
+	"\x11DeleteGameService\x12G\n" +
+	"\n" +
+	"DeleteGame\x12\x1a.game.v1.DeleteGameRequest\x1a\x1b.game.v1.DeleteGameResponse\"\x00B\x1cZ\x1aexample/gen/game/v1;gamev1b\x06proto3"
 
 var (
 	file_game_v1_game_proto_rawDescOnce sync.Once
@@ -833,7 +937,7 @@ func file_game_v1_game_proto_rawDescGZIP() []byte {
 	return file_game_v1_game_proto_rawDescData
 }
 
-var file_game_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_game_v1_game_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_game_v1_game_proto_goTypes = []any{
 	(*Player)(nil),               // 0: game.v1.Player
 	(*CreateGameRequest)(nil),    // 1: game.v1.CreateGameRequest
@@ -850,30 +954,33 @@ var file_game_v1_game_proto_goTypes = []any{
 	(*Card)(nil),                 // 12: game.v1.Card
 	(*SubmitAnswerRequest)(nil),  // 13: game.v1.SubmitAnswerRequest
 	(*SubmitAnswerResponse)(nil), // 14: game.v1.SubmitAnswerResponse
+	(*DeleteGameRequest)(nil),    // 15: game.v1.DeleteGameRequest
+	(*DeleteGameResponse)(nil),   // 16: game.v1.DeleteGameResponse
 }
 var file_game_v1_game_proto_depIdxs = []int32{
-	0,  // 0: game.v1.CreateGameResponse.player:type_name -> game.v1.Player
-	4,  // 1: game.v1.GetGamesResponse.games:type_name -> game.v1.Game
-	0,  // 2: game.v1.JoinGameResponse.player:type_name -> game.v1.Player
-	12, // 3: game.v1.SubmitAnswerRequest.card1:type_name -> game.v1.Card
-	12, // 4: game.v1.SubmitAnswerRequest.card2:type_name -> game.v1.Card
-	1,  // 5: game.v1.CreateGameService.CreateGame:input_type -> game.v1.CreateGameRequest
-	3,  // 6: game.v1.GetGamesService.GetGames:input_type -> game.v1.GetGamesRequest
-	6,  // 7: game.v1.JoinGameService.JoinGame:input_type -> game.v1.JoinGameRequest
-	8,  // 8: game.v1.StartGameService.StartGame:input_type -> game.v1.StartGameRequest
-	10, // 9: game.v1.ReportReadyService.ReportReady:input_type -> game.v1.ReportReadyRequest
-	13, // 10: game.v1.SubmitAnswerService.SubmitAnswer:input_type -> game.v1.SubmitAnswerRequest
+	4,  // 0: game.v1.GetGamesResponse.games:type_name -> game.v1.Game
+	0,  // 1: game.v1.JoinGameResponse.player:type_name -> game.v1.Player
+	12, // 2: game.v1.SubmitAnswerRequest.card1:type_name -> game.v1.Card
+	12, // 3: game.v1.SubmitAnswerRequest.card2:type_name -> game.v1.Card
+	1,  // 4: game.v1.CreateGameService.CreateGame:input_type -> game.v1.CreateGameRequest
+	3,  // 5: game.v1.GetGamesService.GetGames:input_type -> game.v1.GetGamesRequest
+	6,  // 6: game.v1.JoinGameService.JoinGame:input_type -> game.v1.JoinGameRequest
+	8,  // 7: game.v1.StartGameService.StartGame:input_type -> game.v1.StartGameRequest
+	10, // 8: game.v1.ReportReadyService.ReportReady:input_type -> game.v1.ReportReadyRequest
+	13, // 9: game.v1.SubmitAnswerService.SubmitAnswer:input_type -> game.v1.SubmitAnswerRequest
+	15, // 10: game.v1.DeleteGameService.DeleteGame:input_type -> game.v1.DeleteGameRequest
 	2,  // 11: game.v1.CreateGameService.CreateGame:output_type -> game.v1.CreateGameResponse
 	5,  // 12: game.v1.GetGamesService.GetGames:output_type -> game.v1.GetGamesResponse
 	7,  // 13: game.v1.JoinGameService.JoinGame:output_type -> game.v1.JoinGameResponse
 	9,  // 14: game.v1.StartGameService.StartGame:output_type -> game.v1.StartGameResponse
 	11, // 15: game.v1.ReportReadyService.ReportReady:output_type -> game.v1.ReportReadyResponse
 	14, // 16: game.v1.SubmitAnswerService.SubmitAnswer:output_type -> game.v1.SubmitAnswerResponse
-	11, // [11:17] is the sub-list for method output_type
-	5,  // [5:11] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	16, // 17: game.v1.DeleteGameService.DeleteGame:output_type -> game.v1.DeleteGameResponse
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_game_v1_game_proto_init() }
@@ -887,9 +994,9 @@ func file_game_v1_game_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_game_v1_game_proto_rawDesc), len(file_game_v1_game_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
-			NumServices:   6,
+			NumServices:   7,
 		},
 		GoTypes:           file_game_v1_game_proto_goTypes,
 		DependencyIndexes: file_game_v1_game_proto_depIdxs,

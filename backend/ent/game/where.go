@@ -59,6 +59,11 @@ func Name(v string) predicate.Game {
 	return predicate.Game(sql.FieldEQ(FieldName, v))
 }
 
+// TotalRounds applies equality check predicate on the "total_rounds" field. It's identical to TotalRoundsEQ.
+func TotalRounds(v int) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldTotalRounds, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Game {
 	return predicate.Game(sql.FieldEQ(FieldName, v))
@@ -142,6 +147,46 @@ func StatusIn(vs ...Status) predicate.Game {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.Game {
 	return predicate.Game(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// TotalRoundsEQ applies the EQ predicate on the "total_rounds" field.
+func TotalRoundsEQ(v int) predicate.Game {
+	return predicate.Game(sql.FieldEQ(FieldTotalRounds, v))
+}
+
+// TotalRoundsNEQ applies the NEQ predicate on the "total_rounds" field.
+func TotalRoundsNEQ(v int) predicate.Game {
+	return predicate.Game(sql.FieldNEQ(FieldTotalRounds, v))
+}
+
+// TotalRoundsIn applies the In predicate on the "total_rounds" field.
+func TotalRoundsIn(vs ...int) predicate.Game {
+	return predicate.Game(sql.FieldIn(FieldTotalRounds, vs...))
+}
+
+// TotalRoundsNotIn applies the NotIn predicate on the "total_rounds" field.
+func TotalRoundsNotIn(vs ...int) predicate.Game {
+	return predicate.Game(sql.FieldNotIn(FieldTotalRounds, vs...))
+}
+
+// TotalRoundsGT applies the GT predicate on the "total_rounds" field.
+func TotalRoundsGT(v int) predicate.Game {
+	return predicate.Game(sql.FieldGT(FieldTotalRounds, v))
+}
+
+// TotalRoundsGTE applies the GTE predicate on the "total_rounds" field.
+func TotalRoundsGTE(v int) predicate.Game {
+	return predicate.Game(sql.FieldGTE(FieldTotalRounds, v))
+}
+
+// TotalRoundsLT applies the LT predicate on the "total_rounds" field.
+func TotalRoundsLT(v int) predicate.Game {
+	return predicate.Game(sql.FieldLT(FieldTotalRounds, v))
+}
+
+// TotalRoundsLTE applies the LTE predicate on the "total_rounds" field.
+func TotalRoundsLTE(v int) predicate.Game {
+	return predicate.Game(sql.FieldLTE(FieldTotalRounds, v))
 }
 
 // HasPlayers applies the HasEdge predicate on the "players" edge.

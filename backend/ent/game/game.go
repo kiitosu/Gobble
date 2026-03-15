@@ -18,6 +18,8 @@ const (
 	FieldName = "name"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldTotalRounds holds the string denoting the total_rounds field in the database.
+	FieldTotalRounds = "total_rounds"
 	// EdgePlayers holds the string denoting the players edge name in mutations.
 	EdgePlayers = "players"
 	// Table holds the table name of the game in the database.
@@ -36,6 +38,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldStatus,
+	FieldTotalRounds,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -51,6 +54,8 @@ func ValidColumn(column string) bool {
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultTotalRounds holds the default value on creation for the "total_rounds" field.
+	DefaultTotalRounds int
 )
 
 // Status defines the type for the "status" enum field.
@@ -96,6 +101,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByTotalRounds orders the results by the total_rounds field.
+func ByTotalRounds(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTotalRounds, opts...).ToFunc()
 }
 
 // ByPlayersCount orders the results by players count.

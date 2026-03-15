@@ -6,6 +6,7 @@ import {
   CreateGameService,
   GetGamesService,
   StartGameService,
+  DeleteGameService,
 } from "../gen/game/v1/game_pb";
 import type { Game, Player } from "../gen/game/v1/game_pb";
 import GameComponent from "./Game";
@@ -23,6 +24,9 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const [player, setPlayer] = useState<Player>();
   const [games, setGames] = useState<Game[]>([]);
   const [gameName, setGameName] = useState("");
+  const [playerName, setPlayerName] = useState(
+    () => `プレイヤー${Math.floor(Math.random() * 9000 + 1000)}`
+  );
   const [cards, setCards] = useState<{ id: number; text: string }[]>([]);
   const [started, setStarted] = useState<boolean>(false);
   const [answer, setAnswer] = useState<{
@@ -31,10 +35,11 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
     answer: string;
     userAnswer: string;
   }>();
-  const [scores, setScores] = useState<{ player_id: number; score: number }[]>(
+  const [scores, setScores] = useState<{ player_id: number; score: number; name?: string }[]>(
     []
   );
   const [gameOver, setGameOver] = useState<boolean>(false);
+  const [disconnected, setDisconnected] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(0);
   const cardsRef = useRef<{ id: number; text: string }[]>([]);
   const [roundResults, setRoundResults] = useState<
@@ -53,10 +58,42 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
   const createGameClient = createClient(CreateGameService, transport);
   const joinGameServiceclient = createClient(JoinGameService, transport);
   const startGameServiceclient = createClient(StartGameService, transport);
+  const deleteGameClient = createClient(DeleteGameService, transport);
   const getGamesClient = useMemo(
     () => createClient(GetGamesService, transport),
     [transport]
   );
+
+  const resetToLobby = () => {
+    setPlayer(undefined);
+    setGameStatus("");
+    setStarted(false);
+    setCards([]);
+    setScores([]);
+    setGameOver(false);
+    setDisconnected(false);
+    setDealACard(DEAL_A_CARD);
+    setAnswer(undefined);
+    setRoundResults([]);
+    setTotalRounds(0);
+    setCountdown(0);
+    cardsRef.current = [];
+    if (ws.current) {
+      ws.current.close();
+      ws.current = null;
+    }
+  };
+
+  const updateGames = async () => {
+    try {
+      const response = await getGamesClient.getGames({});
+      setGames(response.games);
+      setGamesLoaded(true);
+    } catch (e) {
+      console.error("ゲーム一覧の取得に失敗:", e);
+      setGamesLoaded(true);
+    }
+  };
 
   // player情報が揃ったらWebSocket接続
   useEffect(() => {
@@ -71,11 +108,6 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
         );
       };
 
-      const updateGames = async () => {
-        const response = await getGamesClient.getGames({});
-        setGames(response.games);
-      };
-
       ws.current.onmessage = (e: MessageEvent) => {
         try {
           const msg = JSON.parse(e.data);
@@ -85,12 +117,27 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             updateGames();
           }
 
+          if (msg.event === "PLAYERS" && msg.players) {
+            setScores(msg.players.map((p: any) => ({
+              player_id: p.player_id,
+              score: p.score,
+              name: p.name,
+            })));
+          }
+
           if (msg.event === "STARTED" && !started) {
             setStarted(true);
-            setGameStatus("STARTED");
+            if (msg.players && msg.players.length > 0) {
+              setScores(msg.players.map((p: any) => ({
+                player_id: p.player_id,
+                score: p.score,
+                name: p.name,
+              })));
+            }
             if (msg.total_rounds) {
               setTotalRounds(msg.total_rounds);
             }
+            setGameStatus("STARTED");
           }
 
           if (msg.event === "ANSWERED") {
@@ -107,7 +154,12 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             ]);
             setDealACard(DEAL_A_CARD);
             if (msg.scores) {
-              setScores(msg.scores);
+              setScores((prev) =>
+                msg.scores.map((s: any) => ({
+                  ...s,
+                  name: prev.find((p: any) => p.player_id === s.player_id)?.name ?? s.name,
+                }))
+              );
             }
           }
 
@@ -117,13 +169,11 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             const currentCards = cardsRef.current;
 
             if (currentCards.length < 1) {
-              // 最初のカードは即座に表示
               const next = [...currentCards, pendingCard];
               cardsRef.current = next;
               setCards(next);
               setDealACard(DEAL_A_CARD);
             } else {
-              // 2枚目以降: カウントダウン後に表示
               setCountdown(3);
               let count = 3;
               const interval = setInterval(() => {
@@ -143,10 +193,22 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           }
 
           if (msg.event === "JOINED") {
-            setGameStatus("READY");
+            updateGames();
             if (msg.total_rounds) {
               setTotalRounds(msg.total_rounds);
             }
+            if (msg.players && msg.players.length > 0) {
+              setScores(msg.players.map((p: any) => ({
+                player_id: p.player_id,
+                score: p.score,
+                name: p.name,
+              })));
+            }
+          }
+
+          if (msg.event === "disconnect") {
+            setDisconnected(true);
+            setGameOver(true);
           }
 
           if (msg.event === "GAME_OVER") {
@@ -157,7 +219,6 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
         }
       };
     }
-    // クリーンアップ: Lobbyアンマウント時にWebSocket切断
     return () => {
       if (ws.current) {
         ws.current.close();
@@ -166,28 +227,62 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player]);
 
-  // コンポーネント起動時にゲーム状態を取得
+  // ロビーWebSocket + ポーリングフォールバック
+  const lobbyWs = useRef<WebSocket | null>(null);
   useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const response = await getGamesClient.getGames({});
-        setGames(response.games);
-      } catch (e) {
-        console.error("ゲーム一覧の取得に失敗:", e);
-      }
-    };
-    fetchGames();
-  }, [getGamesClient, setGames]);
+    if (gameStatus === "STARTED") return;
 
-  const createdGames = games
-    .filter((item) => item.status === "CREATED")
+    updateGames();
+
+    // WebSocketでリアルタイム通知
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+    const wsUrl = backendUrl.replace(/^http/, "ws") + "/ws/lobby";
+    lobbyWs.current = new WebSocket(wsUrl);
+    lobbyWs.current.onmessage = (e: MessageEvent) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === "CREATED" || msg.event === "JOINED" || msg.event === "DELETED" || msg.event === "STARTED") {
+          updateGames();
+        }
+      } catch {}
+    };
+
+    // フォールバック: 5秒ごとにポーリング
+    const interval = setInterval(updateGames, 5000);
+
+    return () => {
+      lobbyWs.current?.close();
+      lobbyWs.current = null;
+      clearInterval(interval);
+    };
+  }, [gameStatus]);
+
+  const [gamesLoaded, setGamesLoaded] = useState(false);
+  const visibleGames = games
     .sort((a, b) => b.id - a.id);
 
   // ゲームオーバー画面
-  if (
-    (gameStatus === "STARTED" || (gameStatus === "JOINED" && player)) &&
-    gameOver
-  ) {
+  if (gameStatus === "STARTED" && gameOver) {
+    if (disconnected) {
+      return (
+        <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-8">
+          <h1 className="text-4xl font-bold text-text mb-4">
+            通信が切断されました
+          </h1>
+          <p className="text-xl text-text-muted mb-8">
+            対戦相手の接続が切れたため、ゲームが終了しました。
+          </p>
+          <button
+            onClick={resetToLobby}
+            className="px-8 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition shadow-sm"
+          >
+            ロビーに戻る
+          </button>
+        </div>
+      );
+    }
+
     const sorted = [...scores].sort((a, b) => b.score - a.score);
     const isWinner = sorted[0]?.player_id === player?.id;
     return (
@@ -229,12 +324,18 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
             ))}
           </div>
         </div>
+        <button
+          onClick={resetToLobby}
+          className="mt-8 px-8 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition shadow-sm"
+        >
+          ロビーに戻る
+        </button>
       </div>
     );
   }
 
   // ゲーム中画面
-  if (gameStatus === "STARTED" || (gameStatus === "JOINED" && player)) {
+  if (gameStatus === "STARTED") {
     return (
       <div className="min-h-screen bg-bg">
         <GameComponent
@@ -267,135 +368,174 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           </p>
         </div>
 
+        {/* プレイヤー名入力 */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <label className="text-sm font-semibold text-text-muted">あなたの名前:</label>
+          <input
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="名前を入力"
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text w-48"
+          />
+        </div>
+
         {/* ゲーム作成フォーム */}
-        {gameStatus === "" && (
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!gameName.trim()) return;
-              try {
-                const response = await createGameClient.createGame({
-                  gameName: gameName,
-                  playerName: gameName,
-                  cardCount: cardCount,
-                });
-                if (response.player === undefined) return;
-                const p = response.player;
-                setPlayer(p);
-                setTotalRounds(cardCount - 1);
-                setGames((prevGames) => [
-                  ...prevGames,
-                  {
-                    id: p.gameId,
-                    name: gameName,
-                    status: "CREATED",
-                    $typeName: "game.v1.Game",
-                  },
-                ]);
-                setGameStatus("CREATED");
-              } catch (err) {
-                console.error("ゲーム作成に失敗:", err);
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!gameName.trim()) return;
+            try {
+              await createGameClient.createGame({
+                gameName: gameName,
+                cardCount: cardCount,
+              });
+              setGameName("");
+              updateGames();
+            } catch (err: any) {
+              console.error("ゲーム作成に失敗:", err);
+              if (err?.code === "already_exists" || err?.message?.includes("同名")) {
+                alert("同じ名前のゲームが既に存在します。別の名前にしてください。");
+              } else {
                 alert("ゲーム作成に失敗しました。バックエンドが起動しているか確認してください。");
               }
-            }}
-            className="flex flex-col sm:flex-row gap-3 items-center justify-center mb-10"
+            }
+          }}
+          className="flex flex-col sm:flex-row gap-3 items-center justify-center mb-10"
+        >
+          <input
+            value={gameName}
+            onChange={(e) => setGameName(e.target.value)}
+            placeholder="ゲーム名を入力"
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text"
+          />
+          <select
+            value={cardCount}
+            onChange={(e) => setCardCount(Number(e.target.value))}
+            className="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text"
           >
-            <input
-              value={gameName}
-              onChange={(e) => setGameName(e.target.value)}
-              placeholder="プレイヤー名を入力"
-              className="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text"
-            />
-            <select
-              value={cardCount}
-              onChange={(e) => setCardCount(Number(e.target.value))}
-              className="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary bg-card text-text"
-            >
-              <option value={6}>5ラウンド</option>
-              <option value={11}>10ラウンド</option>
-              <option value={16}>15ラウンド</option>
-              <option value={21}>20ラウンド</option>
-              <option value={31}>30ラウンド（フル）</option>
-            </select>
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition shadow-sm"
-            >
-              ゲームを作成
-            </button>
-          </form>
-        )}
-
-        {/* ステータスメッセージ */}
-        {gameStatus === "CREATED" && (
-          <div className="text-center mb-6 p-4 bg-accent/10 rounded-xl border border-accent/30">
-            <p className="text-accent font-semibold">
-              他のプレイヤーの参加を待っています...
-            </p>
-          </div>
-        )}
+            <option value={6}>5ラウンド</option>
+            <option value={11}>10ラウンド</option>
+            <option value={16}>15ラウンド</option>
+            <option value={21}>20ラウンド</option>
+            <option value={31}>30ラウンド（フル）</option>
+          </select>
+          <button
+            type="submit"
+            className="px-6 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition shadow-sm"
+          >
+            ゲームを作成
+          </button>
+        </form>
 
         {/* ゲーム一覧 */}
         <div className="mb-4">
           <h2 className="text-lg font-bold text-text mb-4">ゲーム一覧</h2>
         </div>
 
-        {createdGames.length === 0 ? (
+        {!gamesLoaded ? (
+          <div className="text-center py-12 text-text-muted">
+            <p className="text-lg">読み込み中...</p>
+          </div>
+        ) : visibleGames.length === 0 ? (
           <div className="text-center py-12 text-text-muted">
             <p className="text-lg">参加できるゲームがありません</p>
             <p className="text-sm mt-1">新しいゲームを作成してください</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {createdGames.map((item) => (
+            {visibleGames.map((item) => {
+              const isStarted = item.status === "STARTED";
+              const isFinished = item.status === "FINISHED";
+              return (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-4 bg-card rounded-xl shadow-sm border border-gray-100"
+                className={`flex items-center justify-between p-4 bg-card rounded-xl shadow-sm border border-gray-100 ${isStarted || isFinished ? "opacity-60" : ""}`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🎮</span>
                   <div>
                     <span className="font-semibold text-text">
-                      Game #{item.id}
+                      {item.name || `Game #${item.id}`}
                     </span>
-                    <span className="ml-3 text-xs px-2 py-0.5 bg-success/10 text-success rounded-full font-medium">
-                      募集中
+                    {isFinished ? (
+                      <span className="ml-2 text-xs px-2 py-0.5 bg-gray-200 text-text-muted rounded-full font-medium">
+                        終了
+                      </span>
+                    ) : isStarted ? (
+                      <span className="ml-2 text-xs px-2 py-0.5 bg-accent/10 text-accent rounded-full font-medium">
+                        開始済み
+                      </span>
+                    ) : (
+                      <span className="ml-2 text-xs px-2 py-0.5 bg-gray-100 text-text-muted rounded-full font-medium">
+                        {item.playerCount}人参加中
+                      </span>
+                    )}
+                    <span className="ml-1 text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
+                      {item.totalRounds}ラウンド
                     </span>
                   </div>
                 </div>
 
-                {gameStatus === "" ? (
-                  <button
-                    onClick={async () => {
-                      const response = await joinGameServiceclient.joinGame({
-                        gameId: String(item.id),
-                        playerName: "unknown",
-                      });
-                      setGameStatus("JOINED");
-                      setPlayer(response.player);
-                    }}
-                    className="px-5 py-2 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition text-sm shadow-sm"
-                  >
-                    参加
-                  </button>
-                ) : (
-                  <button
-                    onClick={async () => {
-                      const response = await startGameServiceclient.startGame({
-                        gameId: String(item.id),
-                        userId: String(player?.id),
-                      });
-                      console.log(response);
-                      setGameStatus("STARTED");
-                    }}
-                    disabled={gameStatus !== "READY"}
-                    className="px-5 py-2 bg-success text-white rounded-xl font-semibold hover:brightness-110 transition text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    開始
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {isStarted || isFinished ? null : !player ? (
+                    <>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await joinGameServiceclient.joinGame({
+                              gameId: String(item.id),
+                              playerName: playerName.trim() || "player",
+                            });
+                            setPlayer(response.player);
+                            setGameStatus("JOINED");
+                            setTotalRounds(0);
+                            updateGames();
+                          } catch (err) {
+                            console.error("ゲーム参加に失敗:", err);
+                            alert("ゲーム参加に失敗しました。");
+                          }
+                        }}
+                        className="px-5 py-2 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition text-sm shadow-sm"
+                      >
+                        参加
+                      </button>
+                      {item.playerCount === 0 && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`「${item.name || `Game #${item.id}`}」を削除しますか？`)) return;
+                            try {
+                              await deleteGameClient.deleteGame({ gameId: String(item.id) });
+                              updateGames();
+                            } catch (err) {
+                              console.error("ゲーム削除に失敗:", err);
+                              alert("ゲーム削除に失敗しました。");
+                            }
+                          }}
+                          className="px-3 py-2 text-danger hover:bg-danger/10 rounded-xl transition text-sm"
+                          title="削除"
+                        >
+                          削除
+                        </button>
+                      )}
+                    </>
+                  ) : player.gameId === item.id ? (
+                    <button
+                      onClick={async () => {
+                        await startGameServiceclient.startGame({
+                          gameId: String(item.id),
+                          userId: String(player?.id),
+                        });
+                      }}
+                      disabled={item.playerCount < 2}
+                      className="px-5 py-2 bg-success text-white rounded-xl font-semibold hover:brightness-110 transition text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {item.playerCount < 2 ? "対戦者を待っています..." : "開始"}
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

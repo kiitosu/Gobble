@@ -12,13 +12,12 @@ message Player {
     int32 score = 4; // プレイヤーのスコア
 }
 message CreateGameRequest {
-    string player_name = 1;
-    string game_name = 2;
-    int32 card_count = 3;
+    string game_name = 1;
+    int32 card_count = 2;
 }
 
 message CreateGameResponse {
-    Player player = 1;
+    int32 game_id = 1;
 }
 
 service CreateGameService {
@@ -30,6 +29,9 @@ message GetGamesRequest {}
 message Game {
     int32 id = 1;
     string status = 2;
+    string name = 3;
+    int32 player_count = 4;
+    int32 total_rounds = 5;
 }
 message GetGamesResponse {
     repeated Game games = 1;
@@ -90,4 +92,13 @@ message SubmitAnswerResponse {
 
 service SubmitAnswerService {
     rpc SubmitAnswer(SubmitAnswerRequest) returns (SubmitAnswerResponse) {}
+}
+
+/* Delete game */
+message DeleteGameRequest {
+    string game_id = 1;
+}
+message DeleteGameResponse {}
+service DeleteGameService {
+    rpc DeleteGame(DeleteGameRequest) returns (DeleteGameResponse) {}
 }

@@ -392,18 +392,20 @@ func (m *CardMutation) ResetEdge(name string) error {
 // GameMutation represents an operation that mutates the Game nodes in the graph.
 type GameMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	name           *string
-	status         *game.Status
-	clearedFields  map[string]struct{}
-	players        map[int]struct{}
-	removedplayers map[int]struct{}
-	clearedplayers bool
-	done           bool
-	oldValue       func(context.Context) (*Game, error)
-	predicates     []predicate.Game
+	op              Op
+	typ             string
+	id              *int
+	name            *string
+	status          *game.Status
+	total_rounds    *int
+	addtotal_rounds *int
+	clearedFields   map[string]struct{}
+	players         map[int]struct{}
+	removedplayers  map[int]struct{}
+	clearedplayers  bool
+	done            bool
+	oldValue        func(context.Context) (*Game, error)
+	predicates      []predicate.Game
 }
 
 var _ ent.Mutation = (*GameMutation)(nil)
@@ -576,6 +578,62 @@ func (m *GameMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetTotalRounds sets the "total_rounds" field.
+func (m *GameMutation) SetTotalRounds(i int) {
+	m.total_rounds = &i
+	m.addtotal_rounds = nil
+}
+
+// TotalRounds returns the value of the "total_rounds" field in the mutation.
+func (m *GameMutation) TotalRounds() (r int, exists bool) {
+	v := m.total_rounds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTotalRounds returns the old "total_rounds" field's value of the Game entity.
+// If the Game object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GameMutation) OldTotalRounds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTotalRounds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTotalRounds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTotalRounds: %w", err)
+	}
+	return oldValue.TotalRounds, nil
+}
+
+// AddTotalRounds adds i to the "total_rounds" field.
+func (m *GameMutation) AddTotalRounds(i int) {
+	if m.addtotal_rounds != nil {
+		*m.addtotal_rounds += i
+	} else {
+		m.addtotal_rounds = &i
+	}
+}
+
+// AddedTotalRounds returns the value that was added to the "total_rounds" field in this mutation.
+func (m *GameMutation) AddedTotalRounds() (r int, exists bool) {
+	v := m.addtotal_rounds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTotalRounds resets all changes to the "total_rounds" field.
+func (m *GameMutation) ResetTotalRounds() {
+	m.total_rounds = nil
+	m.addtotal_rounds = nil
+}
+
 // AddPlayerIDs adds the "players" edge to the Player entity by ids.
 func (m *GameMutation) AddPlayerIDs(ids ...int) {
 	if m.players == nil {
@@ -664,12 +722,15 @@ func (m *GameMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GameMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, game.FieldName)
 	}
 	if m.status != nil {
 		fields = append(fields, game.FieldStatus)
+	}
+	if m.total_rounds != nil {
+		fields = append(fields, game.FieldTotalRounds)
 	}
 	return fields
 }
@@ -683,6 +744,8 @@ func (m *GameMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case game.FieldStatus:
 		return m.Status()
+	case game.FieldTotalRounds:
+		return m.TotalRounds()
 	}
 	return nil, false
 }
@@ -696,6 +759,8 @@ func (m *GameMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case game.FieldStatus:
 		return m.OldStatus(ctx)
+	case game.FieldTotalRounds:
+		return m.OldTotalRounds(ctx)
 	}
 	return nil, fmt.Errorf("unknown Game field %s", name)
 }
@@ -719,6 +784,13 @@ func (m *GameMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
+	case game.FieldTotalRounds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTotalRounds(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Game field %s", name)
 }
@@ -726,13 +798,21 @@ func (m *GameMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *GameMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addtotal_rounds != nil {
+		fields = append(fields, game.FieldTotalRounds)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *GameMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case game.FieldTotalRounds:
+		return m.AddedTotalRounds()
+	}
 	return nil, false
 }
 
@@ -741,6 +821,13 @@ func (m *GameMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *GameMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case game.FieldTotalRounds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTotalRounds(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Game numeric field %s", name)
 }
@@ -773,6 +860,9 @@ func (m *GameMutation) ResetField(name string) error {
 		return nil
 	case game.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case game.FieldTotalRounds:
+		m.ResetTotalRounds()
 		return nil
 	}
 	return fmt.Errorf("unknown Game field %s", name)

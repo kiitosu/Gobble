@@ -24,7 +24,7 @@ type GameProps = {
   };
   dealACard: string;
   setDealACard: React.Dispatch<React.SetStateAction<string>>;
-  scores: { player_id: number; score: number }[];
+  scores: { player_id: number; score: number; name?: string }[];
   countdown: number;
   roundResults: { playerId: number; isCorrect: boolean }[];
   totalRounds: number;
@@ -269,13 +269,17 @@ const GameComponent = (props: GameProps) => {
     );
   }
 
-  const myScore = props.scores.find(
-    (s) => s.player_id === props.player?.id
-  )?.score;
-  const otherScores = props.scores.filter(
-    (s) => s.player_id !== props.player?.id
-  );
-
+  // scores が空の場合、自分のプレイヤー情報からフォールバック
+  // 自分を先頭に、それ以外はIDでソート
+  const rawScores = props.scores.length > 0
+    ? props.scores
+    : props.player
+      ? [{ player_id: props.player.id, score: props.player.score, name: props.player.name }]
+      : [];
+  const displayScores = [
+    ...rawScores.filter(s => s.player_id === props.player?.id),
+    ...rawScores.filter(s => s.player_id !== props.player?.id).sort((a, b) => a.player_id - b.player_id),
+  ];
   // 回答待ち: 場のカード=1つ前、めくったカード=最新
   // それ以外: めくったカードが場に移動し、次のカード待ち
   // 回答中 or 結果表示中は両カード維持、カードを引くまで移動しない
@@ -303,7 +307,7 @@ const GameComponent = (props: GameProps) => {
               ? props.answer.isCorrect
                 ? "正解！"
                 : "不正解..."
-              : `プレイヤー ${props.answer.playerId} が${
+              : `${displayScores.find(s => s.player_id === props.answer!.playerId)?.name || "相手"} が${
                   props.answer.isCorrect ? "正解" : "不正解"
                 }`}
           </div>
@@ -385,38 +389,21 @@ const GameComponent = (props: GameProps) => {
           {props.dealACard}
         </button>
 
-        {/* スコアボード & 星取り表 */}
-        <div className="mt-6 bg-card rounded-2xl shadow-lg p-4 border border-gray-100 w-full max-w-lg">
-          <div className="flex items-center justify-between mb-2">
+        {/* スコアボード */}
+        <div className="mt-6 bg-card rounded-2xl shadow-lg p-4 border border-gray-100 w-full max-w-2xl">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-bold text-text-muted uppercase tracking-wide">
               スコアボード
             </h3>
-            {props.roundResults.length > 0 && (
-              <span className="text-xs text-text-muted">
-                第{props.roundResults.length}回{props.totalRounds > 0 ? ` / ${props.totalRounds}回` : ""}
-              </span>
-            )}
+            <span className="text-xs text-text-muted">
+              第{props.roundResults.length}回{props.totalRounds > 0 ? ` / ${props.totalRounds}回` : ""}
+            </span>
           </div>
-          <div className="flex flex-wrap gap-4 mb-2">
-            {myScore !== undefined && (
-              <div className="text-lg font-bold text-primary">
-                あなた: {myScore}点
-              </div>
-            )}
-            {otherScores.map((s) => (
-              <div key={s.player_id} className="text-sm text-text-muted self-end">
-                P{s.player_id}: {s.score}点
-              </div>
-            ))}
-            {props.scores.length === 0 && (
-              <div className="text-sm text-text-muted">スコア情報なし</div>
-            )}
-          </div>
-
-          {/* 星取り表 */}
-          {props.roundResults.length > 0 && (
-            <div className="pt-2 border-t border-gray-100">
-              {props.scores.map((s) => {
+          {displayScores.length === 0 ? (
+            <div className="text-sm text-text-muted">スコア情報なし</div>
+          ) : (
+            <div className="space-y-2">
+              {displayScores.map((s) => {
                 const isMe = s.player_id === props.player?.id;
                 const marks = props.roundResults.map((r) => {
                   if (r.playerId === s.player_id) {
@@ -426,9 +413,12 @@ const GameComponent = (props: GameProps) => {
                   return "";
                 }).filter(Boolean);
                 return (
-                  <div key={s.player_id} className="mb-1.5 flex items-center gap-2">
-                    <span className={`text-xs font-semibold min-w-12 ${isMe ? "text-primary" : "text-text-muted"}`}>
-                      {isMe ? "あなた" : `P${s.player_id}`}
+                  <div key={s.player_id} className="flex items-center gap-3">
+                    <span className={`text-sm font-semibold min-w-20 shrink-0 ${isMe ? "text-primary" : "text-text-muted"}`}>
+                      {isMe ? "あなた" : (s.name || "相手")}
+                    </span>
+                    <span className={`text-sm font-bold min-w-12 shrink-0 ${isMe ? "text-primary" : "text-text"}`}>
+                      {s.score}点
                     </span>
                     <div className="flex flex-wrap gap-0.5">
                       {marks.map((mark, i) => (

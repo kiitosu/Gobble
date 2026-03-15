@@ -18,6 +18,10 @@ func init() {
 	gameDescName := gameFields[0].Descriptor()
 	// game.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	game.NameValidator = gameDescName.Validators[0].(func(string) error)
+	// gameDescTotalRounds is the schema descriptor for total_rounds field.
+	gameDescTotalRounds := gameFields[2].Descriptor()
+	// game.DefaultTotalRounds holds the default value on creation for the total_rounds field.
+	game.DefaultTotalRounds = gameDescTotalRounds.Default.(int)
 	playerFields := schema.Player{}.Fields()
 	_ = playerFields
 	// playerDescName is the schema descriptor for name field.
