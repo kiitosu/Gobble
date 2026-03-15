@@ -212,7 +212,10 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
           }
 
           if (msg.event === "GAME_OVER") {
-            setGameOver(true);
+            // 最後のラウンドの結果を見せてから結果画面に遷移
+            setTimeout(() => {
+              setGameOver(true);
+            }, 3000);
           }
         } catch {
           // ignore parse error
@@ -314,7 +317,7 @@ const Lobby: React.FC<LobbyProps> = ({}) => {
                   <span className="font-semibold text-text">
                     {score.player_id === player?.id
                       ? "あなた"
-                      : `プレイヤー ${score.player_id}`}
+                      : (score.name || `プレイヤー ${score.player_id}`)}
                   </span>
                 </div>
                 <span className="text-xl font-bold text-primary">

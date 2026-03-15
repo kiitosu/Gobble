@@ -30,9 +30,116 @@ type GameProps = {
   totalRounds: number;
 };
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef as useReactRef } from "react";
 
 import seedrandom from "seedrandom";
+
+type ScoreBoardProps = {
+  displayScores: { player_id: number; score: number; name?: string }[];
+  roundResults: { playerId: number; isCorrect: boolean }[];
+  totalRounds: number;
+  playerId?: number;
+};
+
+const ScoreBoard = ({ displayScores, roundResults, totalRounds, playerId }: ScoreBoardProps) => {
+  const scrollRef = useReactRef<HTMLDivElement>(null);
+  const played = roundResults.length;
+  const total = totalRounds > 0 ? totalRounds : Math.max(played, 1);
+
+  // 最新のセルが見えていなければスクロールして見えるようにする
+  useEffect(() => {
+    if (played === 0) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    // 最新ラウンドのセルの右端位置（各セルは min-w-6 = 24px、px-1 = 4px*2）
+    const cellWidth = 24;
+    const latestRight = played * cellWidth;
+    const visibleRight = el.scrollLeft + el.clientWidth;
+    if (latestRight > visibleRight) {
+      el.scrollLeft = latestRight - el.clientWidth;
+    }
+  }, [played]);
+
+  return (
+    <div className="flex">
+      {/* 左固定: 名前 + 合計 */}
+      <div className="shrink-0 border-r border-gray-200">
+        <table className="text-xs border-collapse">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="text-left px-3 py-2 font-bold text-text-muted border-b border-gray-200 min-w-20 text-nowrap">
+                {played > 0 ? `${played}/${total}` : ""}
+              </th>
+              <th className="px-2 py-2 font-bold text-text border-b border-gray-200 min-w-10">計</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayScores.map((s) => {
+              const isMe = s.player_id === playerId;
+              return (
+                <tr key={s.player_id} className={isMe ? "bg-primary/5" : ""}>
+                  <td className={`text-left px-3 py-2 text-sm font-semibold ${isMe ? "text-primary" : "text-text-muted"}`}>
+                    {isMe ? "あなた" : (s.name || "相手")}
+                  </td>
+                  <td className={`px-2 py-2 text-sm font-bold text-center ${isMe ? "text-primary" : "text-text"}`}>
+                    {s.score}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {/* 右スクロール: ラウンド結果 */}
+      <div ref={scrollRef} className="overflow-x-auto">
+        <table className="text-xs text-center border-collapse">
+          <thead>
+            <tr className="bg-gray-50">
+              {Array.from({ length: total }, (_, i) => (
+                <th key={i} className={`px-1 py-2 font-medium border-b border-gray-200 min-w-6 ${
+                  i < played ? "text-text-muted" : "text-gray-300"
+                }`}>
+                  {i + 1}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayScores.map((s) => {
+              const isMe = s.player_id === playerId;
+              const marks = roundResults.map((r) => {
+                if (r.playerId === s.player_id) {
+                  return r.isCorrect ? "○" : "×";
+                }
+                return "-";
+              });
+              return (
+                <tr key={s.player_id} className={isMe ? "bg-primary/5" : ""}>
+                  {Array.from({ length: total }, (_, i) => {
+                    const mark = i < marks.length ? marks[i] : "";
+                    return (
+                      <td key={i} className={`px-1 py-1.5 font-bold ${
+                        mark === "○"
+                          ? "text-success"
+                          : mark === "×"
+                          ? "text-danger"
+                          : mark === "-"
+                          ? "text-text-muted"
+                          : ""
+                      }`}>
+                        {mark || <span className="text-gray-200">·</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 const GameComponent = (props: GameProps) => {
   const [showResult, setShowResult] = useState(false);
@@ -398,57 +505,15 @@ const GameComponent = (props: GameProps) => {
         </button>
 
         {/* スコアボード */}
-        <div className="mt-6 bg-card rounded-2xl shadow-lg p-4 border border-gray-100 w-full max-w-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wide">
-              スコアボード
-            </h3>
-            <span className="text-xs text-text-muted">
-              第{props.roundResults.length}回{props.totalRounds > 0 ? ` / ${props.totalRounds}回` : ""}
-            </span>
-          </div>
+        <div className="mt-6 bg-card rounded-2xl shadow-lg border border-gray-100 w-full max-w-2xl">
           {displayScores.length === 0 ? (
-            <div className="text-sm text-text-muted">スコア情報なし</div>
-          ) : (
-            <div className="space-y-2">
-              {displayScores.map((s) => {
-                const isMe = s.player_id === props.player?.id;
-                const marks = props.roundResults.map((r) => {
-                  if (r.playerId === s.player_id) {
-                    return r.isCorrect ? "○" : "×";
-                  }
-                  if (r.isCorrect) return "-";
-                  return "";
-                }).filter(Boolean);
-                return (
-                  <div key={s.player_id} className="flex items-center gap-3">
-                    <span className={`text-sm font-semibold min-w-20 shrink-0 ${isMe ? "text-primary" : "text-text-muted"}`}>
-                      {isMe ? "あなた" : (s.name || "相手")}
-                    </span>
-                    <span className={`text-sm font-bold min-w-12 shrink-0 ${isMe ? "text-primary" : "text-text"}`}>
-                      {s.score}点
-                    </span>
-                    <div className="flex flex-wrap gap-0.5">
-                      {marks.map((mark, i) => (
-                        <span
-                          key={i}
-                          className={`w-5 h-5 flex items-center justify-center text-xs font-bold rounded ${
-                            mark === "○"
-                              ? "bg-success/15 text-success"
-                              : mark === "×"
-                              ? "bg-danger/15 text-danger"
-                              : "bg-gray-100 text-text-muted"
-                          }`}
-                        >
-                          {mark}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            <div className="p-4 text-sm text-text-muted">スコア情報なし</div>
+          ) : <ScoreBoard
+            displayScores={displayScores}
+            roundResults={props.roundResults}
+            totalRounds={props.totalRounds}
+            playerId={props.player?.id}
+          />}
         </div>
       </div>
     </div>

@@ -571,6 +571,16 @@ func (s *GameServer) SubmitAnswer(
 				}
 				b, _ := json.Marshal(msg)
 				broadcastToGame(gameEnt.ID, b)
+
+				// 残りカードが0なら自動的にゲーム終了
+				if len(unsentCards[gameEnt.ID]) == 0 {
+					log.Printf("No cards remaining for game %d, sending GAME_OVER", gameEnt.ID)
+					endMsg := map[string]interface{}{
+						"event": "GAME_OVER",
+					}
+					eb, _ := json.Marshal(endMsg)
+					broadcastToGame(gameEnt.ID, eb)
+				}
 			}
 		}
 	}
